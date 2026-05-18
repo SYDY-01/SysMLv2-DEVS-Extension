@@ -1,0 +1,78 @@
+package ManufacturingSystem {
+
+    // 1. 基础数据类型声明 (用于强类型绑定)
+    attribute def double;
+
+    // ==========================================
+    // 2. 零件发生器 (Generator)
+    // ==========================================
+    devs atomic def Generator {
+        out port part_out : double;
+
+        state generating;
+
+        // 时间推进法则：每 10 秒触发一次内部转移
+        ta def computeDuration {
+            generating : 10;
+        }
+
+        // 内部转移法则：生成完毕后，继续保持 generating 状态
+        delta_int def internalLogic {
+            generating -> generating;
+        }
+
+        // 输出函数法则：在发生内部转移时，向 part_out 端口输出 1
+        lambda def outputLogic {
+            generating -> generating do { 
+                part_out = 1; 
+            };
+        }
+    }
+
+    // ==========================================
+    // 3. 加工机器 (Machine)
+    // ==========================================
+    devs atomic def Machine {
+        in port part_in : double;
+        out port product_out : double;
+
+        state idle;
+        state processing;
+
+        // 时间推进法则：空闲时等待 1000(代表无限/长时等待)，加工耗时 7
+        ta def computeDuration {
+            idle : 1000;
+            processing : 7;
+        }
+
+        // 外部转移法则：处于 idle 时，收到 part_in 信号，转移到 processing
+        delta_ext def externalLogic {
+            idle -> processing when part_in;
+        }
+
+        // 内部转移法则：加工 7 秒耗尽后，自动转回 idle 状态
+        delta_int def internalLogic {
+            processing -> idle;
+        }
+
+        // 输出函数法则：在 processing 结束(触发内部转移前)，输出加工成品 1
+        lambda def outputLogic {
+            processing -> idle do { 
+                product_out = 1; 
+            };
+        }
+    }
+
+    // ==========================================
+    // 4. 制造单元耦合模型 (Coupled DEVS)
+    // ==========================================
+    devs coupled def ManufacturingCell0411 {
+        
+        // 实例化 D 集合
+        part gen : Generator;
+        part mach : Machine;
+
+        // 建立 IC 耦合路由矩阵
+        connect gen.part_out to mach.part_in;
+    }
+}

@@ -1,0 +1,20 @@
+\# Node dependencies
+node_modules/
+npm-debug.log
+
+# VS Code specific
+.vscode-test/
+.vscode/launch.json
+.vscode/settings.json
+
+# Langium generated files & compiled code
+out/
+packages/language/src/generated/
+packages/cli/bin/
+*.js
+*.js.map
+*.d.ts
+
+# OS generated files
+.DS_Store
+Thumbs.db

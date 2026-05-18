@@ -1,0 +1,71 @@
+{
+  "name": "sysmlv2-extended",
+  "scopeName": "source.sysmlv2-extended",
+  "fileTypes": [
+    ".sysmlx"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.sysmlv2-extended",
+      "match": "\\b(INFINITE|action|atomic|attribute|connect|coupled|def|delta_ext|delta_int|devs|do|domain|else|enum|false|first|flow|if|in|initial|inout|lambda|out|package|part|port|ref|state|ta|then|to|transition|true|when)\\b"
+    },
+    {
+      "name": "string.quoted.double.sysmlv2-extended",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "include": "#string-character-escape"
+        }
+      ]
+    },
+    {
+      "name": "string.quoted.single.sysmlv2-extended",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "include": "#string-character-escape"
+        }
+      ]
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.sysmlv2-extended",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.sysmlv2-extended"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.sysmlv2-extended"
+            }
+          }
+        },
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.sysmlv2-extended"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.sysmlv2-extended"
+        }
+      ]
+    },
+    "string-character-escape": {
+      "name": "constant.character.escape.sysmlv2-extended",
+      "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
+    }
+  }
+}

@@ -1,0 +1,108 @@
+package UAVSimulation {
+
+    attribute def bool;
+    attribute def double;
+    attribute def int;
+
+    devs atomic def FlightMissionControl {
+        in port evstart;
+        out port evInstruct;
+    }
+    
+devs atomic def ControlBusModule {
+        in port evInstruct : double;
+        out port evSensorPrep : bool;
+        out port evActuatorEnable : bool;
+        out port evPayloadActivate : bool;
+        out port evPowerModev1 : bool;
+        out port evHighPowerOn : bool;
+        out port evPowerModev2 : bool;
+        out port evPowerModev3 : bool;
+    }
+
+devs atomic def Battery {
+        in port evstart : bool;
+        out port voltage : double;
+    }
+
+    devs atomic def Payload {
+        in port evPayloadActivate;
+        in port voltage;
+    }
+
+    devs atomic def Radar {
+        in port evSensorPrep;
+        in port evHighPowerOn;
+        in port voltage;
+    }
+
+    devs atomic def oper {
+        out port evstart;
+    }
+
+    // 之前完整验证过的 AutoPilot
+    devs atomic def AutoPilot {
+        in port evActuatorEnable : bool;
+        in port evPowerModev1 : bool;
+        in port evPowerModev2 : bool;
+        in port evPowerModev3 : bool;
+        in port voltage : double;
+        out port current : double;
+        
+        state off;
+        state on;
+        state tran;
+
+        ta def computeDuration {
+            off : INFINITE;
+            on : INFINITE;
+            tran : 0.001;
+        }
+
+        delta_int def internalLogic {
+            tran -> on;
+        }
+
+        delta_ext def externalLogic {
+            off -> off when voltage;
+            off -> on when evActuatorEnable do { current = 30; };
+            on -> tran when evPowerModev1 do { current = 18; };
+            on -> tran when evPowerModev2 do { current = 30; };
+            on -> tran when evPowerModev3 do { current = 28; };
+        }
+    }
+
+    // ==========================================
+    // 第二部分：DEVS 耦合模型的无缝组装
+    // ==========================================
+    devs coupled def UAV_mission_system {
+        
+        // 1. 组件实例化 (映射 DEVS 的 D 集合)
+        // 此时解析器能完美找到上面的 def，红线全部消失！
+        part FC : FlightMissionControl;
+        part CBM : ControlBusModule;
+        part BAT : Battery;
+        part PL : Payload;
+        part RADAR : Radar;
+        part AP : AutoPilot;
+        part OP : oper;
+
+        // 2. 耦合网络连接 (映射 DEVS 的 IC 内部耦合集)
+        connect OP.evstart to FC.evstart;
+        connect FC.evInstruct to CBM.evInstruct;
+        connect CBM.evSensorPrep to RADAR.evSensorPrep;
+        connect CBM.evActuatorEnable to AP.evActuatorEnable;
+        connect CBM.evPayloadActivate to PL.evPayloadActivate;
+        connect CBM.evPowerModev1 to AP.evPowerModev1;
+        connect CBM.evHighPowerOn to RADAR.evHighPowerOn;
+        connect CBM.evPowerModev2 to AP.evPowerModev2;
+        connect CBM.evPowerModev3 to AP.evPowerModev3;
+        
+        // 支持一对多广播连接
+        connect BAT.voltage to AP.voltage;
+        connect BAT.voltage to PL.voltage;
+        connect BAT.voltage to RADAR.voltage;
+        
+        connect OP.evstart to BAT.evstart;
+    }
+}

@@ -1,0 +1,16 @@
+{
+  "projectName": "SysMLv2Extended",
+  "languages": [
+    {
+      "id": "sysmlv2-extended",
+      "fileExtensions": [
+        ".sysmlx"
+      ],
+      "textMate": {
+        "out": "syntaxes/sys-m-lv-2-extended.tmLanguage.json"
+      },
+      "grammar": "src/SysMLv2Extended.langium" 
+    }
+  ],
+  "out": "src/generated"
+}

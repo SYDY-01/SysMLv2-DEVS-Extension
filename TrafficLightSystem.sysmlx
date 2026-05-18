@@ -1,0 +1,79 @@
+package TrafficLightSystem {
+
+    attribute def double;
+
+    // ==========================================
+    // 1. 行人按键发生器 (自动生成测试信号)
+    // ==========================================
+    devs atomic def PedestrianGen {
+        out port change_req : double;
+
+        state waiting;
+        state triggering;
+
+        ta def computeDuration {
+            waiting : 45;
+            triggering : 0.1;
+        }
+
+        delta_int def internalLogic {
+            waiting -> triggering;
+            triggering -> waiting;
+        }
+
+        lambda def outputLogic {
+            triggering -> waiting do {
+                change_req = 1;
+            };
+        }
+    }
+
+    // ==========================================
+    // 2. 红绿灯控制器 (展现内/外部转移竞争)
+    // ==========================================
+    devs atomic def TrafficLight {
+        in port ped_request : double;
+        out port light_status : double;
+
+        state Green;
+        state Yellow;
+        state Red;
+
+        // 时间推进法则
+        ta def computeDuration {
+            Green : 60;
+            Yellow : 5;
+            Red : 30;
+        }
+
+        // 外部转移法则：绿灯时收到行人请求，提前抢占变黄灯
+        delta_ext def externalLogic {
+            Green -> Yellow when ped_request;
+        }
+
+        // 内部转移法则：时间耗尽后的自然轮转
+        delta_int def internalLogic {
+            Green -> Yellow;
+            Yellow -> Red;
+            Red -> Green;
+        }
+
+        // 输出函数法则：状态切换时对外广播当前灯色 (1=绿, 2=黄, 3=红)
+        lambda def outputLogic {
+            Green -> Yellow do { light_status = 2; };
+            Yellow -> Red do { light_status = 3; };
+            Red -> Green do { light_status = 1; };
+        }
+    }
+
+    // ==========================================
+    // 3. 路口耦合模型
+    // ==========================================
+    devs coupled def Intersection {
+        
+        part pGen : PedestrianGen;
+        part myLight : TrafficLight;
+
+        connect pGen.change_req to myLight.ped_request;
+    }
+}

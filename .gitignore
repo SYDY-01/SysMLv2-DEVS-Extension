@@ -18,3 +18,4 @@ packages/cli/bin/
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
+!packages/cli/bin/cli.js

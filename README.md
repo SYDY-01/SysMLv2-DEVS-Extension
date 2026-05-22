@@ -11,7 +11,7 @@ This project presents a lightweight, non-destructive metamodel extension framewo
 * `/packages/cli`: C++ code generator (M2T transformation engine).
 * `/model-library`: A collection of benchmarking SysML v2 models and the comprehensive UAV Mission System case study.
 
-##  Quick Start (For Reviewers)
+##  Quick Start
 
 ### Prerequisites
 * [Node.js](https://nodejs.org/) (v18 or higher recommended)
@@ -46,7 +46,7 @@ We provided 50 benchmarking models under `/model-library/benchmark-subset/`. All
 
 ---
 
-##  Troubleshooting & Tips for Reviewers
+##  Troubleshooting & Tips
 
 To ensure a smooth reproduction experience, please note the following IDE-specific behaviors:
 

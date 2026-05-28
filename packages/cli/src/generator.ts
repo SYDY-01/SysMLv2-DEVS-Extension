@@ -258,7 +258,7 @@ export function generateJavaScript(model: SysMLModel, filePath: string, destinat
             }
             cppCode += `                state = ${targetState};\n                TranCon += "timeover:"+to_string(state_time);\n                break;\n            }\n`;
         }
-        cppCode += `        default:break; \n        }\n        NextState = stateToString[state];\n    }\n\n`;
+        cppCode += `        default:break; \n        }\n        NextState = stateToString[state];\n        out_variable_val(time_last + state_time,first_save);\n        if (first_save) {\n            first_save = false;\n        }\n    }\n\n`;
 
         // --- 3. Initialization Function ---
         cppCode += `    void init(double t, ...)override {\n    }\n\n`;

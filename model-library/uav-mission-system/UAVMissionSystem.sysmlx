@@ -1,14 +1,14 @@
 package UAVMissionSystem {
 
-    // 1. 基础数据类型声明
+    // 1. Basic Data Type Declarations
     attribute def bool;
     attribute def double;
 
-    // (占位：FlightMissionControl, Payload, Radar, AutoPilot, oper 会在这里)
+    // (Placeholder: FlightMissionControl, Payload, Radar, AutoPilot, oper will be here)
 
     // ==========================================
-    // 2. 控制总线模块 (ControlBusModule)
-    // 核心亮点：基于状态变量的高级条件分支输出
+    // 2. Control Bus Module
+    // Core Feature: Advanced conditional branch output based on state variables
     // ==========================================
     devs atomic def ControlBusModule {
         in port evInstruct : double;
@@ -23,23 +23,23 @@ package UAVMissionSystem {
         state idle;
         state tran;
 
-        // 时间推进：idle 态无限等待，tran 态执行 0.001 秒的极短驻留
+        // Time Advancement: Infinite wait in idle state, 0.001s transient dwell in tran state
         ta def computeDuration {
             idle : INFINITE;
             tran : 0.001;
         }
 
-        // 外部转移：收到指令时跃迁到 tran 状态
+        // External Transition: Transition to tran state when instruction is received
         delta_ext def externalLogic {
             idle -> tran when evInstruct;
         }
 
-        // 内部转移：处理完毕后自动回归 idle
+        // Internal Transition: Automatically return to idle after processing
         delta_int def internalLogic {
             tran -> idle;
         }
 
-        // 输出函数：根据指令类型 (evInstruct) 路由不同的布尔控制信号
+        // Output Function: Route different boolean control signals based on instruction type (evInstruct)
         lambda def outputLogic {
             tran -> idle do {
                 if (evInstruct == 10000) {
@@ -62,8 +62,8 @@ package UAVMissionSystem {
     }
 
     // ==========================================
-    // 3. 电池模块 (Battery)
-    // 核心亮点：利用零时延 (0) 状态实现瞬时输出响应
+    // 3. Battery Module
+    // Core Feature: Instantaneous output response using zero-delay (0) state
     // ==========================================
     devs atomic def Battery {
         in port evstart : bool;
@@ -75,7 +75,7 @@ package UAVMissionSystem {
 
         ta def computeDuration {
             idle : INFINITE;
-            discharge0 : 0;        // 零时延瞬态
+            discharge0 : 0;        // Zero-delay transient state
             discharge : INFINITE;
         }
 
@@ -96,8 +96,8 @@ package UAVMissionSystem {
 
 
     // ==========================================
-    // 4. 有效载荷模块 (Payload)
-    // 亮点：在内部转移 (delta_int) 中执行物理量更新
+    // 4. Payload Module
+    // Feature: Physical quantity update in internal transition (delta_int)
     // ==========================================
     devs atomic def Payload {
         in port evPayloadActivate : bool;
@@ -110,21 +110,21 @@ package UAVMissionSystem {
 
         ta def computeDuration {
             off : INFINITE;
-            on : 15;        // 工作 15 秒后自动结束
+            on : 15;        // Automatically ends after 15 seconds of operation
             over : INFINITE;
         }
 
         delta_ext def externalLogic {
-            // 收到电压时保持 off 状态 (等待激活)
+            // Maintain off state when voltage is received (waiting for activation)
             off -> off when voltage;
-            // 收到激活指令，开启载荷，产生 1A 电流
+            // Receive activation command, turn on payload, generate 1A current
             off -> on when evPayloadActivate do {
                 current = 1;
             };
         }
 
         delta_int def internalLogic {
-            // 15秒工作结束后，电流归零，状态进入 over
+            // After 15 seconds of operation, reset current to 0 and enter over state
             on -> over do {
                 current = 0;
             };
@@ -132,8 +132,8 @@ package UAVMissionSystem {
     }
 
     // ==========================================
-    // 5. 雷达模块 (Radar)
-    // 亮点：纯反应式组件 (所有状态 ta 均为 INFINITE)
+    // 5. Radar Module
+    // Feature: Purely reactive component (all state ta are INFINITE)
     // ==========================================
     devs atomic def Radar {
         in port evSensorPrep : bool;
@@ -142,8 +142,8 @@ package UAVMissionSystem {
         out port current : double;
 
         state off;
-        state yure;         // 预热状态
-        state gaoyajietong; // 高压接通状态
+        state yure;         // Preheating state
+        state gaoyajietong; // High voltage connection state
 
         ta def computeDuration {
             off : INFINITE;
@@ -154,12 +154,12 @@ package UAVMissionSystem {
         delta_ext def externalLogic {
             off -> off when voltage;
             
-            // 收到预热指令，电流飙升至 20A
+            // Receive preheating command, current surges to 20A
             off -> yure when evSensorPrep do {
                 current = 20;
             };
             
-            // 收到高压接通指令，电流飙升至 30A
+            // Receive high voltage connection command, current surges to 30A
             yure -> gaoyajietong when evHighPowerOn do {
                 current = 30;
             };
@@ -167,8 +167,8 @@ package UAVMissionSystem {
     }
 
     // ==========================================
-    // 6. 自动驾驶仪 (AutoPilot)
-    // 亮点：多重外部中断与极短的瞬态 (tran) 刷新机制
+    // 6. AutoPilot Module
+    // Feature: Multiple external interrupts and extremely short transient (tran) refresh mechanism
     // ==========================================
     devs atomic def AutoPilot {
         in port evActuatorEnable : bool;
@@ -185,33 +185,33 @@ package UAVMissionSystem {
         ta def computeDuration {
             off : INFINITE;
             on : INFINITE;
-            tran : 0.001;    // 瞬态打断机制
+            tran : 0.001;    // Transient interrupt mechanism
         }
 
         delta_ext def externalLogic {
             off -> off when voltage;
             
-            // 激活执行机构，初始电流 30A
+            // Activate actuators, initial current 30A
             off -> on when evActuatorEnable do {
                 current = 30;
             };
             
-            // 在运行中随时响应功耗模式切换指令
+            // Respond to power mode switching commands at any time during operation
             on -> tran when evPowerModev1 do { current = 18; };
             on -> tran when evPowerModev2 do { current = 30; };
             on -> tran when evPowerModev3 do { current = 28; };
         }
 
         delta_int def internalLogic {
-            // 瞬态极速返回 on 状态
+            // Transient state quickly returns to on state
             tran -> on;
         }
     }
 
 
     // ==========================================
-    // 7. 操作员激励发生器 (oper)
-    // 亮点：单次触发 (Single-Shot) 逻辑
+    // 7. Operator Stimulus Generator
+    // Feature: Single-Shot logic
     // ==========================================
     devs atomic def oper {
         out port evstart : bool;
@@ -219,7 +219,7 @@ package UAVMissionSystem {
         state idle;
         state off;
 
-        // 仿真启动后 0.001s 触发，随后进入无限期休眠
+        // Trigger 0.001s after simulation starts, then enter infinite sleep
         ta def computeDuration {
             idle : 0.001;
             off : INFINITE;
@@ -237,8 +237,8 @@ package UAVMissionSystem {
     }
 
     // ==========================================
-    // 8. 飞行任务主控 (FlightMissionControl)
-    // 亮点：基于时间序列的复杂自主内部状态机
+    // 8. Flight Mission Control
+    // Feature: Complex autonomous internal state machine based on time series
     // ==========================================
     devs atomic def FlightMissionControl {
         in port evstart : bool;
@@ -247,17 +247,17 @@ package UAVMissionSystem {
         state idle;
         state takeoff_climb0;
         state takeoff_climb;
-        state fadongjizhunbeidianhuo;
+        state fadongjizhunbeidianhuo; // Engine preparation for ignition
         state motor_ignition;
         state cruise_turn;
         state descent;
-        state pingfei2;
-        state ercijianggao;
-        state pingfei3;
+        state pingfei2;               // Level flight phase 2
+        state ercijianggao;           // Secondary climb
+        state pingfei3;               // Level flight phase 3
         state landing_approach;
         state finish;
 
-        // 严密的时间推进时间轴定义
+        // Strict time advancement timeline definition
         ta def computeDuration {
             idle : INFINITE;
             takeoff_climb0 : 0.001;
@@ -270,15 +270,15 @@ package UAVMissionSystem {
             ercijianggao : 100;
             pingfei3 : 8300;
             landing_approach : 5.5;
-            finish : INFINITE; // 默认未在 C++ 显式定义的，均视为死寂态
+            finish : INFINITE; // All states not explicitly defined in C++ are considered dead states
         }
 
-        // 唯一外部转移：接收起飞指令启动状态机
+        // Only external transition: Receive takeoff command to start state machine
         delta_ext def externalLogic {
             idle -> takeoff_climb0 when evstart;
         }
 
-        // 纯时间驱动的内部序列转移
+        // Pure time-driven internal sequence transitions
         delta_int def internalLogic {
             takeoff_climb0 -> takeoff_climb;
             takeoff_climb -> fadongjizhunbeidianhuo;
@@ -292,7 +292,7 @@ package UAVMissionSystem {
             landing_approach -> finish;
         }
 
-        // 在关键状态变迁时发送指令码 (Instruction Codes)
+        // Send instruction codes at critical state transitions
         lambda def outputLogic {
             takeoff_climb0 -> takeoff_climb do { evInstruct = 10000; };
             takeoff_climb -> fadongjizhunbeidianhuo do { evInstruct = 11000; };
@@ -306,11 +306,11 @@ package UAVMissionSystem {
 
 
     // ==========================================
-    // 9. UAV 顶层耦合系统 (Coupled DEVS)
+    // 9. UAV Top-Level Coupled System (Coupled DEVS)
     // ==========================================
     devs coupled def UAV_mission_system0411 {
         
-        // 实例化所有子模块 (D 集合)
+        // Instantiate all submodules (Set D)
         part FC : FlightMissionControl;
         part CBM : ControlBusModule;
         part BAT : Battery;
@@ -319,7 +319,7 @@ package UAVMissionSystem {
         part AP : AutoPilot;
         part OP : oper;
 
-        // 建立全系统拓扑连接路由矩阵 (IC 集合)
+        // Establish full system topology connection routing matrix (Set IC)
         connect OP.evstart to FC.evstart;
         connect FC.evInstruct to CBM.evInstruct;
         connect CBM.evSensorPrep to RADAR.evSensorPrep;
@@ -330,7 +330,7 @@ package UAVMissionSystem {
         connect CBM.evPowerModev2 to AP.evPowerModev2;
         connect CBM.evPowerModev3 to AP.evPowerModev3;
         
-        // 电池电压的一对多广播
+        // One-to-many broadcast of battery voltage
         connect BAT.voltage to AP.voltage;
         connect BAT.voltage to PL.voltage;
         connect BAT.voltage to RADAR.voltage;

@@ -3,7 +3,7 @@ package TrafficLightSystem {
     attribute def double;
 
     // ==========================================
-    // 1. 行人按键发生器 (自动生成测试信号)
+    // 1. Pedestrian Button Generator (Automatically generates test signals)
     // ==========================================
     devs atomic def PedestrianGen {
         out port change_req : double;
@@ -29,7 +29,7 @@ package TrafficLightSystem {
     }
 
     // ==========================================
-    // 2. 红绿灯控制器 (展现内/外部转移竞争)
+    // Traffic Light Controller (Demonstrates internal/external transition competition)
     // ==========================================
     devs atomic def TrafficLight {
         in port ped_request : double;
@@ -39,26 +39,26 @@ package TrafficLightSystem {
         state Yellow;
         state Red;
 
-        // 时间推进法则
+        // Time advancement rule
         ta def computeDuration {
             Green : 60;
             Yellow : 5;
             Red : 30;
         }
 
-        // 外部转移法则：绿灯时收到行人请求，提前抢占变黄灯
+        // External transition rule: When a pedestrian request is received during green light, preemptively switch to yellow light
         delta_ext def externalLogic {
             Green -> Yellow when ped_request;
         }
 
-        // 内部转移法则：时间耗尽后的自然轮转
+        // Internal transition rule: Natural rotation when time expires
         delta_int def internalLogic {
             Green -> Yellow;
             Yellow -> Red;
             Red -> Green;
         }
 
-        // 输出函数法则：状态切换时对外广播当前灯色 (1=绿, 2=黄, 3=红)
+        // Output function rule: Broadcast current light color when state changes (1=Green, 2=Yellow, 3=Red)
         lambda def outputLogic {
             Green -> Yellow do { light_status = 2; };
             Yellow -> Red do { light_status = 3; };
@@ -67,7 +67,7 @@ package TrafficLightSystem {
     }
 
     // ==========================================
-    // 3. 路口耦合模型
+    // 3. Intersection Coupled Model
     // ==========================================
     devs coupled def Intersection {
         

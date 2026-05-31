@@ -37,6 +37,7 @@ To execute the semantics-preserving code generation without entering the sandbox
 For example, to compile a test model into executable C++ code, run:
 \`\`\`bash
 node ./packages/cli/bin/cli.js generate ./model-library/your_model_folder/your_model.sysmlx
+node ./packages/cli/bin/cli.js generate ./model-library/uav-mission-system/UAVMissionSystem.sysmlx
 \`\`\`
 *(Note: The generated C++ files will be automatically output to a "generated" folder located in the exact same directory as the input model file).*
 

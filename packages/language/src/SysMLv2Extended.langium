@@ -1,22 +1,22 @@
 grammar SysMLv2Extended
 
-// --- 抽象接口定义 (MA: 映射到 MOF 的 M2 层) ---
+// --- Abstract Interface Definition (MA: Mapping to M2 layer of MOF) ---
 interface SysMLElement {
     name?: string
 }
 
-// --- 根节点解析入口 ---
+// --- Root Node Parsing Entry ---
 entry SysMLModel:
     (elements+=Element)*;
 
-// 【架构核心】：极其包容的多态 Element 预留槽 \Phi
+// [Architecture Core]: Highly inclusive polymorphic Element reservation slot \Phi
 Element returns SysMLElement:
     Package | PartDef | PartUsage | AttributeDef | 
     EnumDef | PortDef | ActionDef | StateDef | ConnectDef | TransitionDef | FlowDef | RefDef |
     DomainPartDef | DevsAtomicDef | DevsCoupledDef | DevsFunction; 
 
 // ==========================================
-// 1. SysML v2 原生高级语法 (Native SysML v2 SP)
+// 1. Native SysML v2 High-level Syntax (Native SysML v2 SP)
 // ==========================================
 
 Package:
@@ -75,13 +75,13 @@ QualifiedName:
     step+=ID ('::' step+=ID)*;
 
 // ==========================================
-// 2. 案例：通用领域扩展语法模式 (Domain SP)
+// 2. Case: General Domain Extension Syntax Pattern (Domain SP)
 // ==========================================
 DomainPartDef:
     'domain' 'part' 'def' name=ID '{' (elements+=Element)* '}';
 
 // ==========================================
-// 3. 正式研究：DEVS 扩展语法模式 (DEVS SP)
+// 3. Formal Research: DEVS Extension Syntax Pattern (DEVS SP)
 // ==========================================
 
 DevsAtomicDef:
@@ -98,8 +98,10 @@ DevsFunction:
 DevsBehaviorElement:
     DevsTimeAdvance | DevsTransition;
 
+// 【MODIFICATION 1】: Dynamic Time Advance
+// Now it accepts either a constant (NUMBER/'INFINITE') OR a variable reference (timeVar)
 DevsTimeAdvance:
-    state=[StateDef:ID] ':' time=(NUMBER | 'INFINITE') ';';
+    state=[StateDef:ID] ':' (timeValue=(NUMBER | 'INFINITE') | timeVar=[SysMLElement:ID]) ';';
 
 DevsTransition:
     source=[StateDef:ID] '->' target=[StateDef:ID] 
@@ -107,8 +109,8 @@ DevsTransition:
     ('do' '{' (actions+=DevsStatement)* '}')? ';';
 
 // ==========================================
-// 4. 动作语言扩展 (Action Language for Control Flow)
-// 核心亮点：支持图灵完备的 if-else 嵌套与布尔表达式
+// 4. Action Language for Control Flow
+// Core Highlight: Supports Turing-complete nested if-else and arithmetic/boolean expressions
 // ==========================================
 
 DevsStatement:
@@ -123,14 +125,23 @@ DevsIfStatement:
 DevsAssignment:
     target=[SysMLElement:ID] '=' value=Expression ';';
 
+// 【MODIFICATION 2】: Math Operations and the Implicit 'e' Variable
 Expression:
     Comparison;
 
 Comparison:
-    left=PrimaryExpression (operator=('==' | '!=' | '>' | '<' | '>=' | '<=') right=PrimaryExpression)?;
+    left=Addition (operator=('==' | '!=' | '>' | '<' | '>=' | '<=') right=Addition)?;
+
+// Added standard Addition/Subtraction for "sigma - e"
+Addition:
+    left=Multiplication (operator+=('+' | '-') right+=Multiplication)*;
+
+// Added standard Multiplication/Division for completeness
+Multiplication:
+    left=PrimaryExpression (operator+=('*' | '/') right+=PrimaryExpression)*;
 
 PrimaryExpression:
-    NumberLiteral | BooleanLiteral | VariableRef;
+    NumberLiteral | BooleanLiteral | ElapsedTimeLiteral | VariableRef | '(' Expression ')';
 
 NumberLiteral:
     value=NUMBER;
@@ -138,11 +149,15 @@ NumberLiteral:
 BooleanLiteral:
     value=('true' | 'false');
 
+// Added the implicit DEVS elapsed time variable 'e'
+ElapsedTimeLiteral:
+    isE?='e';
+
 VariableRef:
     ref=[SysMLElement:ID];
 
 // ==========================================
-// 核心词法解析 (Lexer Rules)
+// Core Lexical Parsing (Lexer Rules)
 // ==========================================
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;

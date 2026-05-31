@@ -15,14 +15,43 @@ import * as path from 'path';
  * @param expr Expression AST node to parse
  * @returns Generated C++ expression string
  */
+// ==========================================
+// Core 1 & 2: Unified Recursive Expression Engine
+// ==========================================
+/**
+ * Recursively parses an expression AST node (including nested Addition/Multiplication arrays)
+ * and generates the corresponding C++ expression string.
+ */
 function generateExpr(expr: any): string {
     if (!expr) return "";
-    let left = generatePrim(expr.left);
-    if (expr.operator && expr.right) {
-        let right = generatePrim(expr.right);
-        return `${left} ${expr.operator} ${right}`;
+
+    // 1. Base cases: Primitive Literals
+    if (expr.$type === 'NumberLiteral') return expr.value.toString();
+    if (expr.$type === 'BooleanLiteral') return expr.value;
+    if (expr.$type === 'ElapsedTimeLiteral') return "e";
+    if (expr.$type === 'VariableRef') return expr.ref?.ref?.name || "";
+
+    // 2. Recursive structure: Left side
+    let result = "";
+    if (expr.left) {
+        result = generateExpr(expr.left);
     }
-    return left;
+
+    // 3. Recursive structure: Operator and Right side
+    if (expr.operator && expr.right) {
+        // If Langium parsed it as an array (because we used += in grammar)
+        if (Array.isArray(expr.operator) && Array.isArray(expr.right)) {
+            for (let i = 0; i < expr.operator.length; i++) {
+                result += ` ${expr.operator[i]} ${generateExpr(expr.right[i])}`;
+            }
+        } 
+        // If it's a single operator (like in Comparison '==')
+        else {
+            result += ` ${expr.operator} ${generateExpr(expr.right)}`;
+        }
+    }
+    
+    return result;
 }
 
 // ==========================================
@@ -34,13 +63,6 @@ function generateExpr(expr: any): string {
  * @param prim Primitive value AST node
  * @returns String representation of the primitive value
  */
-function generatePrim(prim: any): string {
-    if (!prim) return "";
-    if (prim.$type === 'NumberLiteral') return prim.value.toString();
-    if (prim.$type === 'BooleanLiteral') return prim.value; // Directly returns 'true' or 'false'
-    if (prim.$type === 'VariableRef') return prim.ref?.ref?.name || "";
-    return "";
-}
 
 // ==========================================
 // Core 3: Recursive Control Flow Generation Engine (Key Breakthrough: if-else Nesting)
@@ -158,6 +180,7 @@ export function generateJavaScript(model: SysMLModel, filePath: string, destinat
         const allPorts = [...inPorts, ...outPorts];
         const allStates = devs.elements.filter(isStateDef).map(s => s.name);
         const functions = devs.elements.filter(isDevsFunction);
+        const attributes = devs.elements.filter((e: any) => e.$type === 'AttributeDef') as any[];
 
         // Build port type mapping dictionary
         const portTypes: Record<string, string> = {};
@@ -175,6 +198,24 @@ export function generateJavaScript(model: SysMLModel, filePath: string, destinat
             cppCode += `    shared_ptr<${pType}> _$${port.name};\n    ${pType} ${port.name};\n`;
         }
         
+        // Declare attribute variables
+        for (const attr of attributes) {
+            const attrType = attr.type?.ref?.name || "double";
+            
+
+            let attrValStr = "";
+            if (attr.value) {
+                if (attr.value.numValue !== undefined) {
+                    attrValStr = ` = ${attr.value.numValue}`;
+                } else if (attr.value.strValue !== undefined) {
+                    attrValStr = ` = "${attr.value.strValue}"`;
+                }
+            }
+            
+            cppCode += `    ${attrType} ${attr.name}${attrValStr};\n`;
+        }
+
+
         // Declare state variables and helper members
         cppCode += `    STATE state = ${allStates[0]};\n    map<STATE, std::string> stateToString = {\n`;
         for (let i = 0; i < allStates.length; i++) {
@@ -286,9 +327,23 @@ export function generateJavaScript(model: SysMLModel, filePath: string, destinat
         // Set time advance values for each state
         for (const advance of taAdvances) {
             const stateName = advance.state?.ref?.name;
-            // Map INFINITE to maximum int value for C++ compatibility
-            const timeValue = advance.time === 'INFINITE' ? '2147483647' : advance.time;
-            cppCode += `        case ${stateName}:{\n            state_time = ${timeValue};\n            break;\n        }\n`;
+            let timeValueStr = '';
+
+            // 1. If a dynamic variable is used (e.g., sigma_idle)
+            if (advance.timeVar && advance.timeVar.ref) {
+                // Use ?? 'UNKNOWN_VAR' to ensure it evaluates to a string
+                timeValueStr = advance.timeVar.ref.name ?? 'UNKNOWN_VAR'; 
+            } 
+            // 2. If the value is INFINITE
+            else if (advance.timeValue === 'INFINITE') {
+                timeValueStr = '2147483647'; // Maps to maximum int in C++
+            } 
+            // 3. If it's a regular number
+            else {
+                timeValueStr = String(advance.timeValue);
+            }
+
+            cppCode += `        case ${stateName}:{\n            state_time = ${timeValueStr};\n            break;\n        }\n`;
         }
         cppCode += `        default:break; \n        }\n        return state_time;\n    }\n};\n`;
         

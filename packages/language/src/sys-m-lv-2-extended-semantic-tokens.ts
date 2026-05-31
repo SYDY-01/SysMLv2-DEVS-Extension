@@ -9,8 +9,13 @@ export class SysMLv2ExtendedSemanticTokenProvider extends AbstractSemanticTokenP
 
         // 1. 为时间前进法则 (ta) 中的浮点数赋予 'number' 颜色
         if (isDevsTimeAdvance(node)) {
-            if (typeof node.time === 'number') {
-                acceptor({ node, property: 'time', type: 'number' });
+            // 如果是数字，高亮为 number
+            if (typeof node.timeValue === 'number') {
+                acceptor({ node, property: 'timeValue', type: 'number' });
+            }
+            // 如果是变量，高亮为 variable 或 property
+            if (node.timeVar) {
+                acceptor({ node, property: 'timeVar', type: 'variable' });
             }
         } 
         

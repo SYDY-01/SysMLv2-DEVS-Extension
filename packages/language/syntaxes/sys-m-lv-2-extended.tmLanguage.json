@@ -10,7 +10,7 @@
     },
     {
       "name": "keyword.control.sysmlv2-extended",
-      "match": "\\b(INFINITE|action|atomic|attribute|connect|coupled|def|delta_ext|delta_int|devs|do|domain|else|enum|false|first|flow|if|in|initial|inout|lambda|out|package|part|port|ref|state|ta|then|to|transition|true|when)\\b"
+      "match": "\\b(INFINITE|action|atomic|attribute|connect|coupled|def|delta_ext|delta_int|devs|do|domain|e|else|enum|false|first|flow|if|in|initial|inout|lambda|out|package|part|port|ref|state|ta|then|to|transition|true|when)\\b"
     },
     {
       "name": "string.quoted.double.sysmlv2-extended",

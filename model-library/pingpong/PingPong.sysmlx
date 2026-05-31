@@ -1,0 +1,87 @@
+package PingPongSystem {
+
+    attribute def double;
+
+    // ==========================================
+    // 1. Athlete 1 (Starts in 'idle' state waiting for the ball)
+    // ==========================================
+    devs atomic def Athletic1 {
+        in port ball_in : double;
+        out port ball_out : double;
+
+        state idle;
+        state active;
+
+        // Time advancement rule
+        ta def computeDuration {
+            idle : 1000;
+            active : 0.2;
+        }
+
+        // External transition: When receiving the ball, preempt the 1000s wait and get active
+        delta_ext def externalLogic {
+            idle -> active when ball_in;
+        }
+
+        // Internal transition: Finish hitting the ball and return to waiting
+        delta_int def internalLogic {
+            active -> idle;
+        }
+
+        // Output function: Send the ball out when transitioning from active to idle
+        lambda def outputLogic {
+            active -> idle do { 
+                ball_out = 1; 
+            };
+        }
+    }
+
+    // ==========================================
+    // 2. Athlete 2 (Starts in 'active' state, serving the ball)
+    // ==========================================
+    devs atomic def Athletic2 {
+        in port ball_in : double;
+        out port ball_out : double;
+
+        // Note: By convention of your framework, we declare 'active' first 
+        // to signify it as the default initial state for Athlete 2.
+        state active;
+        state idle;
+
+        // Time advancement rule
+        ta def computeDuration {
+            active : 0.2;
+            idle : 1000;
+        }
+
+        // External transition: Preempt the 1000s sleep when the ball arrives
+        delta_ext def externalLogic {
+            idle -> active when ball_in;
+        }
+
+        // Internal transition: Finish hitting the ball
+        delta_int def internalLogic {
+            active -> idle;
+        }
+
+        // Output function: Return the ball
+        lambda def outputLogic {
+            active -> idle do { 
+                ball_out = 1; 
+            };
+        }
+    }
+
+    // ==========================================
+    // 3. Ping Pong Match Coupled Model
+    // ==========================================
+    devs coupled def PingPongMatch {
+        
+        part player1 : Athletic1;
+        part player2 : Athletic2;
+
+        // Cross-connect the ports to form the closed feedback loop (the ping-pong effect)
+        connect player1.ball_out to player2.ball_in;
+        connect player2.ball_out to player1.ball_in;
+    }
+}

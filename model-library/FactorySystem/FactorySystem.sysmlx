@@ -1,0 +1,97 @@
+package FactorySystem {
+
+    attribute def double;
+
+    // ==========================================
+    // 1. Machine Model
+    // Testing Focus: New syntax (attribute definitions, dynamic time advance, sigma - e arithmetic operations)
+    // ==========================================
+    devs atomic def Machine {
+        in port power_off : double;
+        in port power_on : double;
+        out port job_done : double;
+
+        // [New Syntax Test]: Declare internal attributes
+        attribute def sigma_work : double = 60.0;
+
+        // The first declared state is treated as the initial state by default
+        state working; 
+        state paused;
+
+        // [Mixed Syntax Test]: Dynamic variable references vs. the traditional INFINITE keyword
+        ta def computeDuration {
+            working : sigma_work; // New: Read from dynamic variable
+            paused : INFINITE;    // Old: Constant keyword
+        }
+
+        delta_ext def externalLogic {
+            // [New Syntax Test]: Use the implicit variable 'e' for arithmetic calculations upon external interruption
+            working -> paused when power_off do {
+                sigma_work = sigma_work - e; 
+            };
+            
+            // Old syntax: Simple transition without actions
+            paused -> working when power_on;
+        }
+
+        delta_int def internalLogic {
+            // Old syntax: Upon completion of processing, immediately start the next task and reset the time
+            working -> working do {
+                sigma_work = 60.0;
+            };
+        }
+
+        lambda def outputLogic {
+            working -> working do { 
+                job_done = 1.0; 
+            };
+        }
+    }
+
+    // ==========================================
+    // 2. Power Grid Controller (PowerGrid)
+    // Testing Focus: Purely traditional syntax (constant time advances, simple assignments)
+    // ==========================================
+    devs atomic def PowerGrid {
+        out port cut_power : double;
+        out port restore_power : double;
+
+        state stable;
+        state blackout;
+
+        // [Old Syntax Test]: Pure numeric constants
+        ta def computeDuration {
+            stable : 25.0;     // Normal power supply for 25 seconds
+            blackout : 5.0;    // Power restored after 5 seconds of blackout
+        }
+
+        delta_int def internalLogic {
+            stable -> blackout;
+            blackout -> stable;
+        }
+
+        // [Old Syntax Test]: Pure numeric simple assignments
+        lambda def outputLogic {
+            stable -> blackout do { 
+                cut_power = 1.0; 
+            };
+            blackout -> stable do { 
+                restore_power = 1.0; 
+            };
+        }
+    }
+
+    // ==========================================
+    // 3. Coupled Model
+    // Testing Focus: Component instantiation and port connections
+    // ==========================================
+    devs coupled def FactoryFloor {
+        
+        part myMachine : Machine;
+        part myGrid : PowerGrid;
+
+        // Connect the power grid's control signals to the machine's receiving ports
+        connect myGrid.cut_power to myMachine.power_off;
+        connect myGrid.restore_power to myMachine.power_on;
+    }
+}

@@ -1,0 +1,18 @@
+package Model38_PlatoonStates {
+    part def PlatoonController {
+        initial state Idle;
+        state SearchingForPlatoon;
+        state JoiningManeuver;
+        state FollowingMode;
+        state EmergencyBraking;
+
+        transition startSearch { first Idle; then SearchingForPlatoon; }
+        transition platoonFound { first SearchingForPlatoon; then JoiningManeuver; }
+        transition joinSuccess { first JoiningManeuver; then FollowingMode; }
+        
+        // Interrupt transitions for safety
+        transition hazardDetected { first FollowingMode; then EmergencyBraking; }
+        transition hazardCleared { first EmergencyBraking; then FollowingMode; }
+        transition manualOverride { first FollowingMode; then Idle; }
+    }
+}

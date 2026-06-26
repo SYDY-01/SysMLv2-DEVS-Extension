@@ -1,0 +1,27 @@
+package Model33_LabWorkflowAndTopology {
+    port def TubePort;
+    port def NetworkPort;
+
+    part def PreProcessor { out port tubeOut : TubePort; }
+    part def MainAnalyzer { in port tubeIn : TubePort; out port dataOut : NetworkPort; }
+    part def LabInformationSystem { in port dataIn : NetworkPort; }
+
+    part def ClinicalLabFacility {
+        // Part instances
+        part prepStation : PreProcessor;
+        part analyzerCore : MainAnalyzer;
+        part lisServer : LabInformationSystem;
+
+        // Physical and digital connections
+        connect prepStation.tubeOut to analyzerCore.tubeIn;
+        connect analyzerCore.dataOut to lisServer.dataIn;
+
+        // Abstract workflow actions
+        action scanBarcode;
+        action spinSample;
+        action generateMedicalReport;
+        
+        flow scanBarcode to spinSample;
+        flow spinSample to generateMedicalReport;
+    }
+}

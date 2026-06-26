@@ -1,0 +1,14 @@
+package Model17_MixedComponents {
+    attribute def double;
+    enum def PowerState { 
+        On; 
+        Off; 
+    }
+    port def PowerPort;
+    
+    part def PowerSupply {
+        attribute voltage : double = 12.0;
+        attribute currentState : PowerState = PowerState::On;
+        out port pwrOut : PowerPort;
+    }
+}

@@ -1,0 +1,153 @@
+package Model45_SmartPortDigitalTwin {
+
+    attribute def double;
+    attribute def string;
+
+    // ==========================================
+    // 1. Enums: System States and Dispatch Modes
+    // ==========================================
+    enum def AgentStatus { 
+        Idle; 
+        Executing; 
+        Blocked; 
+        Faulty; 
+    }
+    
+    enum def DispatchStrategy { 
+        NormalOperation; 
+        PeakCongestion; 
+        EmergencyRecovery; 
+    }
+
+    // ==========================================
+    // 2. Interface Contracts for Digital Twin
+    // ==========================================
+    port def TelemetryPort; // Physical to Virtual (State Sync)
+    port def CommandPort;   // Virtual to Physical (Dispatch & Control)
+    port def BusinessDataPort; // TOS to Dispatcher integration
+
+    // ==========================================
+    // 3. Multi-Agent Definitions (5 Types of Agents)
+    // ==========================================
+
+    // 3.1 Terminal Operating System (TOS)
+    part def TerminalOperatingSystem {
+        attribute activeStrategy : DispatchStrategy = DispatchStrategy::NormalOperation;
+        out port taskOrderOut : BusinessDataPort;
+    }
+
+    // 3.2 Central Dispatching System (The Digital Twin Core)
+    part def CentralDispatcher {
+        in port taskOrderIn : BusinessDataPort;
+        in port fleetTelemetryIn : TelemetryPort;
+        out port fleetCommandOut : CommandPort;
+
+        // Digital Twin Verification Actions (Collision & Deadlock)
+        action simulateRouting;
+        action detectSpatialCollision;
+        action detectTemporalDeadlock;
+        action issueVerifiedCommands;
+
+        flow simulateRouting to detectSpatialCollision;
+        flow detectSpatialCollision to detectTemporalDeadlock;
+        flow detectTemporalDeadlock to issueVerifiedCommands;
+    }
+
+    // 3.3 Quay Crane (QC - 岸桥)
+    part def QuayCrane {
+        attribute craneEfficiency : double = 35.0; // Moves per hour
+        attribute currentStatus : AgentStatus = AgentStatus::Idle;
+        
+        in port cmdIn : CommandPort;
+        out port telemetryOut : TelemetryPort;
+    }
+
+    // 3.4 Rail-Mounted Gantry Crane (RMG - 轨道吊/场桥)
+    part def RailMountedGantry {
+        attribute yardTurnaroundTime : double = 2.5; // Minutes per container
+        in port cmdIn : CommandPort;
+        out port telemetryOut : TelemetryPort;
+    }
+
+    // 3.5 Automated Guided Vehicle Swarm (AGV 集群)
+    part def AGVSwarm {
+        attribute activeVehicles : double = 50.0;
+        attribute fleetTurnaroundTime : double = 12.0; // Minutes
+        
+        in port cmdIn : CommandPort;
+        out port telemetryOut : TelemetryPort;
+
+        // AGV State Machine representing normal and emergency logic
+        initial state Standby;
+        state Navigating;
+        state BlockedByTraffic;
+        state EmergencyStop;
+
+        transition receiveTask { first Standby; then Navigating; }
+        transition encounterObstacle { first Navigating; then BlockedByTraffic; }
+        transition resolveBlockage { first BlockedByTraffic; then Navigating; }
+        transition triggerEStop { first Navigating; then EmergencyStop; }
+        transition remoteReset { first EmergencyStop; then Standby; }
+    }
+
+    // ==========================================
+    // 4. System-Level Topology (Closed-Loop Architecture)
+    // ==========================================
+    part def SmartPortDigitalTwinSystem {
+        
+        // --- System Level Constraints / KPIs ---
+        attribute globalVesselInPortTime : double = 24.0; // Hours
+        attribute globalThroughputTEU : double = 10000.0; // TEUs per day
+
+        // --- Instantiation of Agents ---
+        part tos : TerminalOperatingSystem;
+        part dispatcher : CentralDispatcher;
+        part qc : QuayCrane;
+        part rtg : RailMountedGantry;
+        part agvs : AGVSwarm;
+
+        // --- Digital Twin Bidirectional Topology ---
+        // 1. Business Logic Downstream
+        connect tos.taskOrderOut to dispatcher.taskOrderIn;
+        
+        // 2. Telemetry Upstream (Physical -> Twin)
+        connect qc.telemetryOut to dispatcher.fleetTelemetryIn;
+        connect rtg.telemetryOut to dispatcher.fleetTelemetryIn;
+        connect agvs.telemetryOut to dispatcher.fleetTelemetryIn;
+
+        // 3. Command Downstream (Twin -> Physical)
+        connect dispatcher.fleetCommandOut to qc.cmdIn;
+        connect dispatcher.fleetCommandOut to rtg.cmdIn;
+        connect dispatcher.fleetCommandOut to agvs.cmdIn;
+
+        // --- Cross-Agent Operational Sequence (Container Unloading Flow) ---
+        action qcUnloadContainer;
+        action agvTransportToYard;
+        action rtgStackInYard;
+
+        flow qcUnloadContainer to agvTransportToYard;
+        flow agvTransportToYard to rtgStackInYard;
+    }
+
+    // ==========================================
+    // 5. Emergency & Optimization Scenario Executions
+    // ==========================================
+    part def PortOperationScenarios {
+        
+        // Scenario A: Peak Congestion (Testing deadlock robustness and KPI degradation)
+        part peakCongestionScenario : SmartPortDigitalTwinSystem {
+            globalVesselInPortTime = 36.5; 
+            globalThroughputTEU = 8500.0; // Throughput drops due to congestion
+            
+            // Note: In a full simulation, DispatchStrategy would be re-assigned 
+            // inside the TOS component definition, but here we adjust the system KPIs 
+            // to reflect the outcome of the digital twin evaluation.
+        }
+
+        // Scenario B: AGV Fault Emergency Recovery
+        part emergencyRecoveryScenario : SmartPortDigitalTwinSystem {
+            globalVesselInPortTime = 42.0; 
+            globalThroughputTEU = 7000.0; 
+        }
+    }
+}

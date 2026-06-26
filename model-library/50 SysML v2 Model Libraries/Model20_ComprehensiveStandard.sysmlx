@@ -1,0 +1,42 @@
+package Model20_ComprehensiveStandard {
+    attribute def double;
+    enum def Status { 
+        Ok; 
+        Error; 
+    }
+    port def DataPort;
+    domain part def PhysicalEnvironment {}
+    
+    part def Computer {
+        attribute clockSpeed : double = 3.5;
+        attribute sysStatus : Status = Status::Ok;
+        
+        in port dataIn : DataPort;
+        out port dataOut : DataPort;
+        
+        initial state Booting;
+        state Running;
+        transition boot { 
+            first Booting; 
+            then Running; 
+        }
+        
+        action processData;
+        action sendData;
+        flow processData to sendData;
+    }
+    
+    part def SystemEnv {
+        part env : PhysicalEnvironment;
+        
+        // 测试属性覆盖（Assignments）
+        part comp1 : Computer {
+            clockSpeed = 4.0;
+        }
+        part comp2 : Computer {
+            clockSpeed = 4.2;
+        }
+        
+        connect comp1.dataOut to comp2.dataIn;
+    }
+}

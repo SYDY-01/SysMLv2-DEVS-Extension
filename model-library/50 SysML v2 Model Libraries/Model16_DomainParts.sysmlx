@@ -1,0 +1,9 @@
+package Model16_DomainParts {
+    domain part def MechanicalContext {}
+    domain part def ElectricalContext {}
+    
+    part def CyberPhysicalSystem {
+        part mech : MechanicalContext;
+        part elec : ElectricalContext;
+    }
+}

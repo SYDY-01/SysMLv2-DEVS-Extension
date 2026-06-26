@@ -1,0 +1,20 @@
+package Model34_HVACContext {
+    attribute def double;
+    
+    domain part def ThermalEnvironment {}
+    
+    port def AirDuct;
+    port def ControlSignalPort;
+
+    part def SmartThermostat {
+        attribute targetTemperature : double = 22.5;
+        out port ctrlSignal : ControlSignalPort;
+    }
+    
+    part def VAVBox {
+        attribute maxAirflowRate : double = 1000.0;
+        in port ctrlSignal : ControlSignalPort;
+        in port airSupplyIn : AirDuct;
+        out port airConditionedOut : AirDuct;
+    }
+}

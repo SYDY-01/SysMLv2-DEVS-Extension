@@ -1,0 +1,195 @@
+package Model47_DeepSpaceEDL {
+
+    attribute def double;
+    attribute def string;
+
+    // ==========================================
+    // 1. EDL Phases and Health Status (Enums)
+    // ==========================================
+    enum def EDLPhase { 
+        Cruise; 
+        AeroBraking; 
+        ParachuteDescent; 
+        PoweredDescent; 
+        Hovering; 
+        Touchdown; 
+    }
+    
+    enum def SystemHealth { 
+        Nominal; 
+        ParachuteDelayed; 
+        CriticalFault; 
+    }
+
+    // ==========================================
+    // 2. Cross-Domain Interface Ports
+    // ==========================================
+    port def ThermalPort;      // Aerodynamic heat transfer
+    port def StructuralPort;   // Mechanical loads and stress
+    port def GNCSignalPort;    // Guidance, Navigation, and Control signals
+    port def PowerPort;        // Electrical distribution
+
+    // ==========================================
+    // 3. Subsystem Definitions (6 Coupled Domains)
+    // ==========================================
+    
+    // 3.1 Thermal Protection System (TPS)
+    part def ThermalProtectionSystem {
+        attribute heatFlux : double = 0.0;
+        attribute maxTemperature : double = 2500.0;
+        in port aeroFrictionIn : ThermalPort;
+        out port thermalLoadOut : StructuralPort;
+    }
+
+    // 3.2 Parachute System
+    part def ParachuteSystem {
+        attribute deployTimeWindowMs : double = 250.0; // Extremely narrow window
+        attribute dragCoefficient : double = 1.5;
+        in port deployCmdIn : GNCSignalPort;
+        out port mechanicalStressOut : StructuralPort;
+    }
+
+    // 3.3 Propulsion System (Retrorockets)
+    part def PropulsionSystem {
+        attribute thrust : double = 7500.0;
+        attribute fuelRemaining : double = 1000.0;
+        in port thrustCmdIn : GNCSignalPort;
+        out port structuralForceOut : StructuralPort;
+    }
+
+    // 3.4 GNC Core Computer 
+    part def GNCCore {
+        attribute altitude : double = 120000.0; // Entry interface altitude
+        attribute velocity : double = 5500.0;   // m/s
+        attribute overloadG : double = 0.0;
+        
+        in port radarDataIn : GNCSignalPort;
+        out port chuteCmdOut : GNCSignalPort;
+        out port engineCmdOut : GNCSignalPort;
+    }
+
+    // 3.5 Landing Radar 
+    part def LandingRadar {
+        attribute sensingAccuracy : double = 0.01;
+        in port pwrIn : PowerPort;
+        out port radarDataOut : GNCSignalPort;
+    }
+
+    // 3.6 Landing Buffer Legs 
+    part def LandingLegs {
+        attribute bufferCapacity : double = 50000.0; // Newtons
+        in port impactForceIn : StructuralPort;
+    }
+
+    // ==========================================
+    // 4. EDL Lander Architecture & Multi-Domain Topology
+    // ==========================================
+    part def EDLLanderSystem {
+        
+        // System KPIs
+        attribute systemHealth : SystemHealth = SystemHealth::Nominal;
+        attribute timeToTouchdown : double = 420.0; // "7 Minutes of Terror"
+
+        // Instantiation
+        part tps : ThermalProtectionSystem;
+        part chute : ParachuteSystem;
+        part propulsion : PropulsionSystem;
+        part gnc : GNCCore;
+        part radar : LandingRadar;
+        part legs : LandingLegs;
+
+        // --- Cross-Domain Connectivity ---
+        connect radar.radarDataOut to gnc.radarDataIn;
+        connect gnc.chuteCmdOut to chute.deployCmdIn;
+        connect gnc.engineCmdOut to propulsion.thrustCmdIn;
+        
+        // Structural stress converging on the main frame (abstracted to legs here)
+        connect tps.thermalLoadOut to legs.impactForceIn; 
+        connect chute.mechanicalStressOut to legs.impactForceIn;
+        connect propulsion.structuralForceOut to legs.impactForceIn;
+
+        // ==========================================
+        // 5. State Machine: 7 Key States & Boundary Verification
+        // ==========================================
+        initial state PreEntry;
+        state AeroBraking;
+        state ParachuteDescent;
+        state PoweredDescent;
+        state HoverAndAvoid;
+        state Touchdown;
+        state DegradedPoweredDescent; // Formal verification fallback state
+
+        // Nominal 7-minute path
+        transition t1 { first PreEntry; then AeroBraking; }
+        transition t2 { first AeroBraking; then ParachuteDescent; }
+        transition t3 { first ParachuteDescent; then PoweredDescent; }
+        transition t4 { first PoweredDescent; then HoverAndAvoid; }
+        transition t5 { first HoverAndAvoid; then Touchdown; }
+
+        // Extreme Edge Case Verification: Parachute Delay implies bypassing normal parachute state
+        // and triggering early engine ignition to compensate for altitude loss.
+        transition parachuteDelayed { first AeroBraking; then DegradedPoweredDescent; }
+        transition recoverToHover { first DegradedPoweredDescent; then HoverAndAvoid; }
+
+        // ==========================================
+        // 6. Multi-Physics Coupling Chains (Mapped as Actions)
+        // ==========================================
+        
+        // Chain A: Thermo-Mechanical Coupling (Atmosphere -> Drag -> Overload -> Heat)
+        action calcAtmoDensity;
+        action computeAeroDrag;
+        action evalDecelerationOverload;
+        action calcSurfaceHeatFlux;
+
+        flow calcAtmoDensity to computeAeroDrag;
+        flow computeAeroDrag to evalDecelerationOverload;
+        flow evalDecelerationOverload to calcSurfaceHeatFlux;
+
+        // Chain B: Propulsion-GNC-Sensing Coupling (Radar -> Attitude -> Thrust -> Fuel)
+        action readRadarData;
+        action calcAttitudeAngle;
+        action adjustThrustVector;
+        action updateTrajectory;
+        action monitorFuelRemaining;
+
+        flow readRadarData to calcAttitudeAngle;
+        flow calcAttitudeAngle to adjustThrustVector;
+        flow adjustThrustVector to updateTrajectory;
+        flow updateTrajectory to monitorFuelRemaining;
+
+        // ==========================================
+        // 7. Strict Timing Constraints & Interlock Logic
+        // ==========================================
+        // Guaranteeing that radar power-on strictly waits for heat shield jettison
+        action jettisonHeatShieldAndChute;
+        action powerOnRadar;
+        action igniteRetrorockets;
+        
+        // Guaranteeing engine cutoff strictly upon touchdown signal (preventing flip-over)
+        action confirmTouchdownSignal;
+        action immediateEngineCutoff;
+
+        flow jettisonHeatShieldAndChute to powerOnRadar;
+        flow powerOnRadar to igniteRetrorockets;
+        flow confirmTouchdownSignal to immediateEngineCutoff;
+    }
+
+    // ==========================================
+    // 8. Formal Verification Scenario Instantiation
+    // ==========================================
+    part def EDLVerificationScenarios {
+        
+        // Scenario A: Nominal Landing Profile
+        part nominalLandingConfig : EDLLanderSystem {
+            systemHealth = SystemHealth::Nominal;
+            timeToTouchdown = 420.0;
+        }
+
+        // Scenario B: Formal checking for Parachute Deployment Delay
+        part degradedLandingConfig : EDLLanderSystem {
+            systemHealth = SystemHealth::ParachuteDelayed;
+            // The timeline is compressed due to falling faster without chute
+            timeToTouchdown = 390.5; 
+        }
+    }
+}

@@ -1,0 +1,9 @@
+package Model06_DirectedAttributes {
+    attribute def double;
+    
+    part def ThermalProcessor {
+        in attribute heatInput : double;
+        out attribute heatOutput : double;
+        inout attribute internalTemp : double;
+    }
+}

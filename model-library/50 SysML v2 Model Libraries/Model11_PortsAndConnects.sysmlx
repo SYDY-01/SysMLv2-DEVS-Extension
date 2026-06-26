@@ -1,0 +1,19 @@
+package Model11_PortsAndConnects {
+    port def PowerPort;
+    
+    part def Battery {
+        out port pOut : PowerPort;
+    }
+    
+    part def Motor {
+        in port pIn : PowerPort;
+    }
+    
+    part def System {
+        part src : Battery;
+        part dst : Motor;
+        
+
+        connect src.pOut to dst.pIn;
+    }
+}

@@ -1,0 +1,105 @@
+package Model48_RefinerySIS {
+
+    attribute def double;
+    attribute def string;
+
+    // ==========================================
+    // 1. Safety Integrity Levels & Risk Metrics
+    // ==========================================
+    enum def SafetyLevel { 
+        SIL1; SIL2; SIL3; SIL4; 
+    }
+    
+    // ==========================================
+    // 2. Protection Layer & Signal Interfaces
+    // ==========================================
+    port def ProcessParamPort; // Pressure, Temp, Flow
+    port def LogicSignalPort;  // Control and Trip signals
+    port def ActuatorPort;     // Valve or Pump command
+
+    // ==========================================
+    // 3. Protection Layer Architecture (5 Layers)
+    // ==========================================
+    
+    // 3.1 BPCS: Basic Process Control System
+    part def BPCS {
+        attribute controlLoopIntegrity : double = 0.95;
+        in port processIn : ProcessParamPort;
+        out port ctrlOut : ActuatorPort;
+    }
+
+    // 3.2 SIS: Safety Instrumented System (Sensors, Logic, Elements)
+    part def SIS_LogicSolver {
+        attribute pfdAverage : double = 0.001; // Probability of Failure on Demand
+        in port sensorIn : LogicSignalPort;
+        out port tripOut : ActuatorPort;
+    }
+
+    part def SafetySensor {
+        attribute tripThreshold : double = 450.0; // Bar
+        out port sensorDataOut : LogicSignalPort;
+    }
+
+    part def FinalControlElement {
+        in port tripIn : ActuatorPort;
+    }
+
+    // ==========================================
+    // 4. Integrated Protection Layer Topology
+    // ==========================================
+    part def CrackingUnitProtection {
+        
+        // System-level constraints
+        attribute targetSIL : SafetyLevel = SafetyLevel::SIL3;
+        attribute hazardScenarioID : string = "HAZOP-001";
+
+        // Instantiation of layers
+        part bpcsLayer : BPCS;
+        part sisSensors : SafetySensor;
+        part sisLogic : SIS_LogicSolver;
+        part emergencyValve : FinalControlElement;
+
+        // Connectivity for independent layers
+        connect sisSensors.sensorDataOut to sisLogic.sensorIn;
+        connect sisLogic.tripOut to emergencyValve.tripIn;
+
+        // ==========================================
+        // 5. Logic Response Levels (5-Tier Response Chain)
+        // ==========================================
+        action stateNormal;
+        action stateWarning;
+        action stateSoftInterlock; // SIS Level 1
+        action stateHardInterlock; // SIS Level 2
+        action stateEmergencyDepressurization; // Final Layer
+
+        flow stateNormal to stateWarning;
+        flow stateWarning to stateSoftInterlock;
+        flow stateSoftInterlock to stateHardInterlock;
+        flow stateHardInterlock to stateEmergencyDepressurization;
+
+        // ==========================================
+        // 6. Safety State Machine
+        // ==========================================
+        initial state NormalProcess;
+        state ProcessAlert;
+        state SIS_Trip_Active;
+        state EmergencyVenting;
+
+        transition alertTriggered { first NormalProcess; then ProcessAlert; }
+        transition tripTriggered { first ProcessAlert; then SIS_Trip_Active; }
+        transition ventingTriggered { first SIS_Trip_Active; then EmergencyVenting; }
+        transition systemReset { first EmergencyVenting; then NormalProcess; }
+    }
+
+    // ==========================================
+    // 7. SIL Compliance Verification Configuration
+    // ==========================================
+    part def SafetyComplianceVerification {
+        
+        part crackingUnitSIS_Config : CrackingUnitProtection {
+            // Validation of SIL3 performance criteria
+            targetSIL = SafetyLevel::SIL3;
+            hazardScenarioID = "C3-REACTOR-OVERPRESSURE";
+        }
+    }
+}

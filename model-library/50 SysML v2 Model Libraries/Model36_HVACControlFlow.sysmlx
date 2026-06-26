@@ -1,0 +1,20 @@
+package Model36_HVACControlFlow {
+    part def CentralChillerUnit {
+        // State machine for mechanical operation
+        initial state Standby;
+        state ActiveCooling;
+        state Defrosting;
+
+        transition startCooling { first Standby; then ActiveCooling; }
+        transition freezeProtection { first ActiveCooling; then Defrosting; }
+        transition defrostComplete { first Defrosting; then Standby; }
+
+        // Logic flow for temperature regulation
+        action senseAmbientTemperature;
+        action compareWithSetpoint;
+        action adjustCompressorSpeed;
+
+        flow senseAmbientTemperature to compareWithSetpoint;
+        flow compareWithSetpoint to adjustCompressorSpeed;
+    }
+}

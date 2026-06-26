@@ -1,0 +1,23 @@
+package Model15_NestedStates {
+    part def OperationalSystem {
+        initial state Off;
+        
+        state On {
+            initial state Booting;
+            state Running;
+            transition bootToRun { 
+                first Booting; 
+                then Running; 
+            }
+        }
+        
+        transition turnOn { 
+            first Off; 
+            then On; 
+        }
+        transition turnOff { 
+            first On; 
+            then Off; 
+        }
+    }
+}

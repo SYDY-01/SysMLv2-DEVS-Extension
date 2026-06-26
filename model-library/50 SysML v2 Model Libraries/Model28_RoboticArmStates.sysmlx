@@ -1,0 +1,38 @@
+package Model28_RoboticArmStates {
+    attribute def double;
+    
+    part def Joint { 
+        attribute angle : double = 0.0; 
+    }
+    part def EndEffector { 
+        attribute gripForce : double = 50.5; 
+    }
+
+    part def RoboticArm {
+        part baseJoint : Joint;
+        part elbowJoint : Joint;
+        part gripper : EndEffector;
+
+        initial state Standby;
+        state MovingToTarget;
+        state Grasping;
+        state Returning;
+
+        transition toTarget { 
+            first Standby; 
+            then MovingToTarget; 
+        }
+        transition graspItem { 
+            first MovingToTarget; 
+            then Grasping; 
+        }
+        transition returnHome { 
+            first Grasping; 
+            then Returning; 
+        }
+        transition finishTask { 
+            first Returning; 
+            then Standby; 
+        }
+    }
+}

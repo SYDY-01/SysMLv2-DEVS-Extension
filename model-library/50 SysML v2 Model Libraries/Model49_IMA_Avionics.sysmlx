@@ -1,0 +1,103 @@
+package Model49_IMA_Avionics {
+
+    attribute def double;
+    attribute def string;
+
+    // ==========================================
+    // 1. Airworthiness & DAL Levels (DO-178C/DO-254)
+    // ==========================================
+    enum def DesignAssuranceLevel { 
+        DAL_A; // Flight Critical
+        DAL_B; 
+        DAL_C; 
+        DAL_D; // Non-Critical
+    }
+
+    // ==========================================
+    // 2. Hardware Resource & Network Interfaces
+    // ==========================================
+    port def AFDX_NetworkPort; // Deterministic Ethernet
+    port def ComputeResource;  // Memory & CPU time slice
+
+    part def ProcessingModule {
+        attribute totalCpuCycles : double = 1000.0;
+        attribute totalMemoryMb : double = 4096.0;
+        out port resourceOut : ComputeResource;
+    }
+
+    part def AFDX_Switch {
+        attribute bandwidthMbps : double = 100.0;
+        inout port netPort : AFDX_NetworkPort;
+    }
+
+    // ==========================================
+    // 3. Software Partition Definitions (ARINC 653)
+    // ==========================================
+    part def FlightControlPartition {
+        attribute safetyLevel : DesignAssuranceLevel = DesignAssuranceLevel::DAL_A;
+        attribute timeSliceMs : double = 20.0;
+        attribute memQuotaMb : double = 512.0;
+        
+        in port resourceIn : ComputeResource;
+        out port netOut : AFDX_NetworkPort;
+    }
+
+    part def CabinDisplayPartition {
+        attribute safetyLevel : DesignAssuranceLevel = DesignAssuranceLevel::DAL_D;
+        attribute timeSliceMs : double = 5.0;
+        attribute memQuotaMb : double = 1024.0;
+        
+        in port resourceIn : ComputeResource;
+    }
+
+    // ==========================================
+    // 4. IMA Architecture (Partitioned Topology)
+    // ==========================================
+    part def IMA_IntegratedPlatform {
+        
+        // --- Hardware Platform ---
+        part cpm : ProcessingModule;
+        part networkSwitch : AFDX_Switch;
+
+        // --- Partitioned Software ---
+        part fltCtrl : FlightControlPartition;
+        part display : CabinDisplayPartition;
+
+        // --- Spatial & Temporal Allocation ---
+        connect cpm.resourceOut to fltCtrl.resourceIn;
+        connect cpm.resourceOut to display.resourceIn;
+        connect fltCtrl.netOut to networkSwitch.netPort;
+
+        // --- Health Management & Scheduling Logic ---
+        action scheduleTimeSlice;
+        action monitorPartitionHealth;
+        action isolateFaultyPartition;
+        action rebootPartition;
+
+        flow scheduleTimeSlice to monitorPartitionHealth;
+        flow monitorPartitionHealth to isolateFaultyPartition;
+        flow isolateFaultyPartition to rebootPartition;
+
+        // --- ARINC 653 Scheduler State Machine ---
+        initial state MajorFrame; // Major Time Frame (MTF)
+        state FltCtrlExecution;
+        state DisplayExecution;
+        state PartitionTransition;
+
+        transition scheduleFltCtrl { first MajorFrame; then FltCtrlExecution; }
+        transition scheduleDisplay { first FltCtrlExecution; then DisplayExecution; }
+        transition frameReset { first DisplayExecution; then MajorFrame; }
+    }
+
+    // ==========================================
+    // 5. Certification Traceability Configuration
+    // ==========================================
+    part def CertificationCompliance {
+        
+        // Target: Verifying DAL-A Partition Isolation
+        part dalA_Verification : IMA_IntegratedPlatform {
+            // Confirming spatial and temporal isolation constraints
+            // These would be linked to DO-178C compliance logs
+        }
+    }
+}

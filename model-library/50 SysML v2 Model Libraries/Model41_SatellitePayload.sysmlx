@@ -1,0 +1,60 @@
+package Model41_SatellitePayload {
+    
+    attribute def double;
+    
+    // ==========================================
+    // 1. Subsystem Definitions (Leaf Nodes)
+    // ==========================================
+    part def Detector {
+        attribute pixelSize : double;
+        attribute detectorPower : double;
+        attribute detectorWeight : double;
+    }
+
+    part def Optics {
+        attribute focalLength : double;
+        attribute aperture : double;
+        attribute opticsWeight : double;
+    }
+
+    // ==========================================
+    // 2. System Definition (Nested Hierarchy)
+    // ==========================================
+    part def OpticalPayload {
+        // System-level parametric attributes
+        attribute orbitHeight : double;
+        attribute imagingResolution : double;
+        attribute totalWeight : double;
+        attribute totalPower : double;
+
+        // Structural composition demonstrating hierarchy
+        part sensor : Detector;
+        part lens : Optics;
+        
+        // Logical reference to external satellite bus (Testing RefDef)
+        ref satelliteBus;
+    }
+
+    // ==========================================
+    // 3. Trade-off Analysis Scenarios (Configurations)
+    // Demonstrating different architectural iterations
+    // ==========================================
+    part def ParametricTradeoffAnalysis {
+        
+        // Configuration A: High Resolution focus (Heavier, more power)
+        part configA_HighRes : OpticalPayload {
+            orbitHeight = 500.0;
+            imagingResolution = 0.3;
+            totalWeight = 125.5;
+            totalPower = 85.0;
+        }
+
+        // Configuration B: Lightweight focus (Lower resolution, higher orbit)
+        part configB_LowWeight : OpticalPayload {
+            orbitHeight = 700.0;
+            imagingResolution = 1.2;
+            totalWeight = 65.0;
+            totalPower = 40.0;
+        }
+    }
+}

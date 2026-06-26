@@ -1,0 +1,21 @@
+package Model27_TrafficNetwork {
+    port def VehiclePort;
+    
+    part def RoadSegment { 
+        in port inVehicles : VehiclePort; 
+        out port outVehicles : VehiclePort; 
+    }
+    part def Intersection { 
+        in port approach : VehiclePort; 
+        out port exit : VehiclePort; 
+    }
+
+    part def CityGrid {
+        part inter1 : Intersection;
+        part mainRoad : RoadSegment;
+        part inter2 : Intersection;
+
+        connect inter1.exit to mainRoad.inVehicles;
+        connect mainRoad.outVehicles to inter2.approach;
+    }
+}

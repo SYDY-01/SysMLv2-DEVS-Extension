@@ -1,0 +1,19 @@
+package Model10_NestedStructures {
+    attribute def double;
+    
+    part def Spacecraft {
+        attribute weight : double = 15000.0;
+        
+        part def PropulsionSystem {
+            attribute thrust : double = 500.0;
+            
+            part def Thruster {
+                attribute fuelRate : double = 10.5;
+            }
+            
+            part mainThruster : Thruster;
+        }
+        
+        part engine : PropulsionSystem;
+    }
+}

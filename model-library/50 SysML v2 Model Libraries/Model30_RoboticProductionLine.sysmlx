@@ -1,0 +1,31 @@
+package Model30_RoboticProductionLine {
+    port def PowerPort;
+    port def ControlPort;
+
+    part def PowerSupply { 
+        out port pwrOut : PowerPort; 
+    }
+    part def MainController { 
+        out port ctrlOut : ControlPort; 
+    }
+    part def RoboticArm { 
+        in port pwrIn : PowerPort; 
+        in port ctrlIn : ControlPort; 
+    }
+    part def Conveyor { 
+        in port pwrIn : PowerPort; 
+        in port ctrlIn : ControlPort; 
+    }
+
+    part def AutomatedWorkcell {
+        part psu : PowerSupply;
+        part plc : MainController;
+        part arm : RoboticArm;
+        part belt : Conveyor;
+
+        connect psu.pwrOut to arm.pwrIn;
+        connect psu.pwrOut to belt.pwrIn;
+        connect plc.ctrlOut to arm.ctrlIn;
+        connect plc.ctrlOut to belt.ctrlIn;
+    }
+}

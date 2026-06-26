@@ -1,0 +1,4 @@
+package Model01_BasicPart {
+    part def Vehicle {}
+    part def Engine {} 
+}

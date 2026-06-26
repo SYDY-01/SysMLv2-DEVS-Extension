@@ -1,0 +1,165 @@
+package Model43_GasTurbineCombinedCycle {
+
+    attribute def double;
+    attribute def string;
+
+    // ==========================================
+    // 1. Interface Definitions (Cross-Domain Coupling)
+    // ==========================================
+    port def FluidPort;       // Working fluid (Air, Gas, Steam)
+    port def MechanicalPort;  // Shaft power coupling
+    port def ElectricalPort;  // High-voltage grid connection
+    port def ControlPort;     // Control and sensor signals
+
+    // ==========================================
+    // 2. Core Subsystem Definitions (7 Systems)
+    // ==========================================
+    
+    // 2.1 Compressor
+    part def Compressor {
+        attribute pressureRatio : double = 18.5;
+        in port airIn : FluidPort;
+        out port airOut : FluidPort;
+    }
+
+    // 2.2 Combustor
+    part def Combustor {
+        attribute noxEmissions : double = 15.0; // ppm
+        in port airIn : FluidPort;
+        in port fuelIn : FluidPort;
+        out port gasOut : FluidPort;
+    }
+
+    // 2.3 Gas Turbine
+    part def GasTurbine {
+        attribute turbineInletTemp : double = 1430.0; // TIT in Celsius
+        in port gasIn : FluidPort;
+        out port exhaustOut : FluidPort;
+        out port shaftPowerOut : MechanicalPort;
+    }
+
+    // 2.4 Heat Recovery Steam Generator (HRSG)
+    part def HRSG {
+        in port exhaustIn : FluidPort;
+        out port steamOut : FluidPort;
+    }
+
+    // 2.5 Steam Turbine
+    part def SteamTurbine {
+        attribute steamPressure : double = 13.5; // MPa
+        attribute rotorSpeed : double = 3000.0;  // RPM
+        in port steamIn : FluidPort;
+        out port shaftPowerOut : MechanicalPort;
+    }
+
+    // 2.6 Generator
+    part def Generator {
+        attribute activePower : double = 400.0; // MW
+        attribute gridFrequency : double = 50.0; // Hz
+        
+        in port gtShaftIn : MechanicalPort;
+        in port stShaftIn : MechanicalPort;
+        in port excitationIn : ControlPort;
+        out port gridPowerOut : ElectricalPort;
+    }
+
+    // 2.7 Excitation Control System
+    part def ExcitationSystem {
+        attribute excitationVoltage : double = 400.0;
+        in port voltageFeedbackIn : ControlPort;
+        out port excitationSignalOut : ControlPort;
+    }
+
+    // ==========================================
+    // 3. Plant Level Architecture & Multi-Domain Coupling
+    // ==========================================
+    part def CombinedCyclePowerPlant {
+        
+        // System-level KPIs (representing the constraint resolution targets)
+        attribute cycleThermalEfficiency : double = 0.61;
+        attribute totalOutputMW : double = 600.0;
+
+        // Subsystem Instantiation
+        part comp : Compressor;
+        part comb : Combustor;
+        part gt : GasTurbine;
+        part hrsg : HRSG;
+        part st : SteamTurbine;
+        part gen : Generator;
+        part exciter : ExcitationSystem;
+
+        // --- Thermodynamic & Fluid Coupling Topology ---
+        connect comp.airOut to comb.airIn;
+        connect comb.gasOut to gt.gasIn;
+        connect gt.exhaustOut to hrsg.exhaustIn;
+        connect hrsg.steamOut to st.steamIn;
+
+        // --- Mechanical Coupling Topology ---
+        connect gt.shaftPowerOut to gen.gtShaftIn;
+        connect st.shaftPowerOut to gen.stShaftIn;
+        
+        // --- Electrical & Control Coupling Topology ---
+        connect exciter.excitationSignalOut to gen.excitationIn;
+
+        // ==========================================
+        // 4. Multi-Disciplinary Mathematical Constraint Network (Mapped as Action Flows)
+        // Represents: Pressure Ratio -> TIT -> Efficiency -> NOx
+        // ==========================================
+        action calcThermodynamicCycle;
+        action evaluateEmissionConstraints;
+        action solveElectricalCoupling;
+        action adjustControlValves;
+
+        flow calcThermodynamicCycle to evaluateEmissionConstraints;
+        flow evaluateEmissionConstraints to solveElectricalCoupling;
+        flow solveElectricalCoupling to adjustControlValves;
+
+        // ==========================================
+        // 5. Master State Machine (8 Full Operating Conditions)
+        // ==========================================
+        initial state ColdStart;
+        state Idle;
+        state GridConnected;
+        state BaseLoad;
+        state DeepPeakShaving;
+        state LoadRejection;
+        state FaultProtection;
+        state NormalShutdown;
+
+        // Sequential Operations
+        transition t1 { first ColdStart; then Idle; }
+        transition t2 { first Idle; then GridConnected; }
+        transition t3 { first GridConnected; then BaseLoad; }
+        
+        // Dynamic Load Adjustments
+        transition t4 { first BaseLoad; then DeepPeakShaving; }
+        transition t5 { first DeepPeakShaving; then BaseLoad; }
+        
+        // Abnormal & Emergency Conditions
+        transition t6 { first BaseLoad; then LoadRejection; }
+        transition t7 { first LoadRejection; then Idle; }
+        transition emergency1 { first BaseLoad; then FaultProtection; }
+        transition emergency2 { first DeepPeakShaving; then FaultProtection; }
+        
+        // Shutdown Sequence
+        transition stopCmd { first Idle; then NormalShutdown; }
+    }
+
+    // ==========================================
+    // 6. Parametric Trade-off Scenarios (FMI/Modelica Target Mappings)
+    // ==========================================
+    part def PlantSimulationScenarios {
+        
+        // Scenario A: Base Load Full Power Configuration
+        part baseLoadConfig : CombinedCyclePowerPlant {
+            cycleThermalEfficiency = 0.625;
+            totalOutputMW = 650.0;
+        }
+
+        // Scenario B: Deep Peak Shaving Configuration (Efficiency drops)
+        part peakShavingConfig : CombinedCyclePowerPlant {
+            cycleThermalEfficiency = 0.54;
+            totalOutputMW = 250.0;
+        }
+    }
+}

@@ -1,0 +1,30 @@
+package Model26_TrafficStates {
+    part def IntersectionController {
+        initial state AllRed;
+        state NorthSouthGreen;
+        state NorthSouthYellow;
+        state EastWestGreen;
+        state EastWestYellow;
+
+        transition t1 { 
+            first AllRed; 
+            then NorthSouthGreen; 
+        }
+        transition t2 { 
+            first NorthSouthGreen; 
+            then NorthSouthYellow; 
+        }
+        transition t3 { 
+            first NorthSouthYellow; 
+            then EastWestGreen; 
+        }
+        transition t4 { 
+            first EastWestGreen; 
+            then EastWestYellow; 
+        }
+        transition t5 { 
+            first EastWestYellow; 
+            then AllRed; 
+        }
+    }
+}

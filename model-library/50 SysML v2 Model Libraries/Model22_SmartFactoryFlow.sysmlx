@@ -1,0 +1,12 @@
+package Model22_SmartFactoryFlow {
+    part def AssemblyLine {
+        action loadMaterial;
+        action processMaterial;
+        action qualityCheck;
+        action packageProduct;
+
+        flow loadMaterial to processMaterial;
+        flow processMaterial to qualityCheck;
+        flow qualityCheck to packageProduct;
+    }
+}

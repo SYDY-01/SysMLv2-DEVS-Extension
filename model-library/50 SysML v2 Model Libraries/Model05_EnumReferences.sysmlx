@@ -1,0 +1,10 @@
+package Model05_EnumReferences {
+    enum def Mode {
+        Active;
+        Sleep;
+    }
+    
+    part def Controller {
+        attribute currentMode : Mode = Mode::Sleep;
+    }
+}

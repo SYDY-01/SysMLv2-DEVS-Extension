@@ -1,0 +1,17 @@
+package Model40_AutonomousDecisionFlow {
+    part def DrivingBrain {
+        action captureCameraImage;
+        action processLidarPointcloud;
+        action fuseSensorData;
+        action planTrajectory;
+        action sendSteeringCommand;
+
+        // Convergent flows into a single fusion action
+        flow captureCameraImage to fuseSensorData;
+        flow processLidarPointcloud to fuseSensorData;
+        
+        // Sequential decision making
+        flow fuseSensorData to planTrajectory;
+        flow planTrajectory to sendSteeringCommand;
+    }
+}

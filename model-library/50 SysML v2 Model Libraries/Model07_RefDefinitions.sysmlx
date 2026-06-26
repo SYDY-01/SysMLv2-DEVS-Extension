@@ -1,0 +1,8 @@
+package Model07_RefDefinitions {
+    part def MemoryBank {} 
+    
+    part def CPU {
+        ref cache : MemoryBank;
+        ref mainMemory;
+    }
+}

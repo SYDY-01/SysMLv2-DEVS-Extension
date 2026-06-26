@@ -1,0 +1,12 @@
+package Model03_Enums {
+    enum def SignalStatus {
+        Red;
+        Yellow;
+        Green;
+    }
+    
+    enum def SwitchState {
+        On;
+        Off;
+    }
+}

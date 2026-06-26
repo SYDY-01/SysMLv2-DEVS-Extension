@@ -1,0 +1,135 @@
+package Model42_OffshoreSecuritySoS {
+
+    attribute def double;
+    attribute def string;
+    
+    enum def ThreatLevel { 
+        Low; 
+        Medium; 
+        High; 
+    }
+    
+    // ==========================================
+    // 1. Interface & Communication Contracts (Communication Ports)
+    // ==========================================
+    port def DataLinkPort;
+    port def CommandPort;
+
+    // ==========================================
+    // 2. Single System Definitions (Level 3: System Functions)
+    // ==========================================
+    
+    // 2.1 Shore-based Radar Array (岸基雷达阵)
+    part def RadarArray {
+        attribute detectionRange : double = 150.5;
+        attribute blindSpotRatio : double = 0.05;
+        
+        out port radarDataOut : DataLinkPort;
+        
+        action scanHorizon;
+        action detectTarget;
+        flow scanHorizon to detectTarget;
+    }
+
+    // 2.2 Fixed-wing Inspection UAV (固定翼巡检无人机)
+    part def InspectionUAV {
+        attribute flightEndurance : double = 8.0;
+        
+        in port cmdIn : CommandPort;
+        out port videoStreamOut : DataLinkPort;
+        
+        initial state Patrol;
+        state Intercept;
+        transition receiveInterceptCmd { 
+            first Patrol; 
+            then Intercept; 
+        }
+    }
+
+    // 2.3 Unmanned Patrol Boat (无人巡逻艇)
+    part def PatrolBoat {
+        attribute topSpeed : double = 45.0;
+        in port cmdIn : CommandPort;
+        out port surfaceDataOut : DataLinkPort;
+    }
+
+    // 2.4 Unmanned Underwater Vehicle - UUV (水下潜航器)
+    part def UnderwaterVehicle {
+        attribute diveDepth : double = 500.0;
+        in port cmdIn : CommandPort;
+        out port sonarDataOut : DataLinkPort;
+    }
+
+    // 2.5 Shore-based Command Center (岸基指挥中心)
+    part def CommandCenter {
+        attribute processingDelay : double = 0.5;
+        
+        in port dataIn : DataLinkPort;
+        out port cmdOut : CommandPort;
+        
+        // Internal actions representing Data Fusion and Dispatch functions
+        action receiveMultiSourceData;
+        action fuseData;
+        action evaluateThreat;
+        action dispatchCommands;
+        
+        flow receiveMultiSourceData to fuseData;
+        flow fuseData to evaluateThreat;
+        flow evaluateThreat to dispatchCommands;
+    }
+
+    // ==========================================
+    // 3. System of Systems (SoS) Integration (Level 1 & 2)
+    // ==========================================
+    part def CoastalSecuritySoS {
+        
+        // --- SoS Emergent KPIs (体系级涌现效能约束) ---
+        attribute sosTargetDiscoveryProbability : double;
+        attribute sosResponseLatency : double;
+        attribute sosBlindSpotCoverage : double;
+
+        // --- System Instantiation ---
+        part radar : RadarArray;
+        part uav : InspectionUAV;
+        part boat : PatrolBoat;
+        part uuv : UnderwaterVehicle;
+        part cmdCenter : CommandCenter;
+
+        // --- Cross-System Interactions (多系统协同通信契约) ---
+        // Radar, UAV, Boat, and UUV all feed data into the Command Center
+        connect radar.radarDataOut to cmdCenter.dataIn;
+        connect uav.videoStreamOut to cmdCenter.dataIn;
+        connect boat.surfaceDataOut to cmdCenter.dataIn;
+        connect uuv.sonarDataOut to cmdCenter.dataIn;
+        
+        // Command Center dispatches instructions to mobile platforms
+        connect cmdCenter.cmdOut to uav.cmdIn;
+        connect cmdCenter.cmdOut to boat.cmdIn;
+        connect cmdCenter.cmdOut to uuv.cmdIn;
+
+        // --- Cross-System Capability Flow (跨系统目标接力跟踪时序) ---
+        // Abstract representation of the operational sequence across different parts
+        action radarDetect;
+        action centerFuseAndDispatch;
+        action uavIntercept;
+        
+        flow radarDetect to centerFuseAndDispatch;
+        flow centerFuseAndDispatch to uavIntercept;
+    }
+    // 4. Trade-off Analysis & Scenario Instantiation
+    // ==========================================
+    part def SecurityScenarioAnalysis {
+        
+        // Instantiating the SoS to evaluate a specific deployment configuration
+        // Strictly adhering to the rule: only Assignments allowed inside PartUsage
+        part coastalDefenseConfigA : CoastalSecuritySoS {
+            sosTargetDiscoveryProbability = 0.98;
+            sosResponseLatency = 2.5;
+            sosBlindSpotCoverage = 0.99;
+        }
+
+        // If a specific specialized subsystem is needed, define it at the 'PartDef' level
+        // instead of deeply nesting it inside a 'PartUsage'.
+    }
+
+}

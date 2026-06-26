@@ -1,0 +1,24 @@
+package Model23_CNCMachineStates {
+    part def CNCMachine {
+        initial state Idle;
+        state Processing;
+        state Maintenance;
+
+        transition startJob { 
+            first Idle; 
+            then Processing; 
+        }
+        transition finishJob { 
+            first Processing; 
+            then Idle; 
+        }
+        transition errorOccurred { 
+            first Processing; 
+            then Maintenance; 
+        }
+        transition maintenanceFixed { 
+            first Maintenance; 
+            then Idle; 
+        }
+    }
+}

@@ -1,0 +1,17 @@
+package Model12_DeepConnections {
+    port def DataPort;
+    
+    part def Sensor { out port tx : DataPort; }
+    part def Controller { in port rx : DataPort; }
+    
+    part def SensorSubsystem { part s1 : Sensor; }
+    part def ControlSubsystem { part c1 : Controller; }
+    
+    part def Vehicle {
+        part sensSys : SensorSubsystem;
+        part ctrlSys : ControlSubsystem;
+        
+
+        connect sensSys.s1.tx to ctrlSys.c1.rx;
+    }
+}

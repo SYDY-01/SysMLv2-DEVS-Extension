@@ -1,0 +1,10 @@
+package Model08_PartInstantiations {
+    part def Wheel {}   
+    part def Chassis {} 
+    
+    part def Car {
+        part frontLeftWheel : Wheel; 
+        part frontRightWheel : Wheel;
+        part body : Chassis;
+    }
+}

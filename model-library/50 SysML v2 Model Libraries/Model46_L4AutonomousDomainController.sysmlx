@@ -1,0 +1,148 @@
+package Model46_L4AutonomousDomainController {
+
+    attribute def string;
+    attribute def double;
+
+    // ==========================================
+    // 1. Safety & Security Taxonomy (Enums)
+    // ==========================================
+    enum def SafetyIntegrityLevel { 
+        QM; 
+        ASIL_A; 
+        ASIL_B; 
+        ASIL_C; 
+        ASIL_D; 
+    }
+    
+    enum def CyberAssuranceLevel { 
+        CAL1; 
+        CAL2; 
+        CAL3; 
+        CAL4; 
+    }
+
+    // ==========================================
+    // 2. Hardware Interfaces & Redundancy Definitions
+    // ==========================================
+    port def SecureDataBus;
+    port def RedundantPowerLine;
+
+    part def PowerManagementIC {
+        out port primaryPwr : RedundantPowerLine;
+        out port secondaryPwr : RedundantPowerLine;
+    }
+
+    part def ComputingSoC {
+        attribute safetyLevel : SafetyIntegrityLevel = SafetyIntegrityLevel::ASIL_D;
+        attribute securityLevel : CyberAssuranceLevel = CyberAssuranceLevel::CAL4;
+        
+        in port pwrIn : RedundantPowerLine;
+        inout port canFdBus : SecureDataBus;
+        inout port ethBus : SecureDataBus;
+    }
+
+    // ==========================================
+    // 3. Software Stacks (Safety & Security Mechanisms)
+    // ==========================================
+    part def PerceptionStack {
+        // Mechanism: Data sanity check and sensor fusion redundancy
+        action validateSensorSignatures;
+        action fuseRedundantData;
+        flow validateSensorSignatures to fuseRedundantData;
+    }
+
+    part def DecisionStack {
+        // Mechanism: ASIL-D trajectory planning with lockstep cross-checking
+        action calculatePrimaryTrajectory;
+        action crossCheckWithSafetyMCU;
+        flow calculatePrimaryTrajectory to crossCheckWithSafetyMCU;
+    }
+
+    part def ControlStack {
+        // Mechanism: E2E (End-to-End) data validation and Secure MAC verification
+        action executeE2EValidation;
+        action verifyMessageAuthCode;
+        action outputActuatorCmd;
+        
+        flow executeE2EValidation to verifyMessageAuthCode;
+        flow verifyMessageAuthCode to outputActuatorCmd;
+    }
+
+    // ==========================================
+    // 4. Domain Controller Integration & Composite Risk Model
+    // ==========================================
+    part def ADASDomainController {
+        
+        // System-level constraints
+        attribute maxTolerableDelayMs : double = 10.0;
+        attribute encryptionStatus : string = "Disabled";
+
+        // --- Hardware Instantiation (Redundant Topology) ---
+        part pmic : PowerManagementIC;
+        part mainSoC : ComputingSoC;       // Primary AI computing
+        part safetyMCU : ComputingSoC;     // Redundant checker (e.g., Aurix TC397)
+
+        connect pmic.primaryPwr to mainSoC.pwrIn;
+        connect pmic.secondaryPwr to safetyMCU.pwrIn;
+        connect mainSoC.canFdBus to safetyMCU.canFdBus;
+
+        // --- Software Instantiation ---
+        part perception : PerceptionStack;
+        part decision : DecisionStack;
+        part control : ControlStack;
+
+        // --- Security Mechanisms (Intrusion Detection & Secure Boot) ---
+        action secureBootProcess;
+        action continuousIntrusionDetection;
+        action isolateCompromisedCore;
+
+        flow secureBootProcess to continuousIntrusionDetection;
+
+        // --- Safety State Machine (Degradation & MRC Handling) ---
+        // MRC = Minimal Risk Condition
+        initial state FullyOperational;
+        state SinglePointFaultDetected;
+        state CyberAttackDetected;
+        state LimpHomeMode;        // Safe degradation
+        state MinimalRiskCondition; // Safe stop
+
+        // Composite Scenarios: Fault Tree & Attack Tree Convergence
+        transition hwFaultTrigger { 
+            first FullyOperational; 
+            then SinglePointFaultDetected; 
+        }
+        transition busInjectionTrigger { 
+            first FullyOperational; 
+            then CyberAttackDetected; 
+        }
+        
+        // Degradation paths
+        transition degradeFromFault { 
+            first SinglePointFaultDetected; 
+            then LimpHomeMode; 
+        }
+        transition degradeFromAttack { 
+            first CyberAttackDetected; 
+            then LimpHomeMode; 
+        }
+        
+        // Composite Risk: If both occur, or degradation fails, trigger MRC
+        transition criticalCompositeFailure { 
+            first LimpHomeMode; 
+            then MinimalRiskCondition; 
+        }
+    }
+
+    // ==========================================
+    // 5. Verification Configurations
+    // ==========================================
+    part def SafetySecurityVerification {
+        
+        // Target Configuration for ASIL-D & CAL4 Compliance
+        part adcuTargetConfig : ADASDomainController {
+            // Overriding default attributes to satisfy strict requirements
+            maxTolerableDelayMs = 5.5; 
+            encryptionStatus = "AES256_Active";
+        }
+    }
+}

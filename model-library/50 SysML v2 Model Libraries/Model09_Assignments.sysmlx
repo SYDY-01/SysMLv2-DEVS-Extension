@@ -1,0 +1,16 @@
+package Model09_Assignments {
+    attribute def double;
+    
+    part def Motor {
+        attribute maxPower : double = 100.0;
+    }
+    
+    part def Robot {
+        part leftMotor : Motor {
+            maxPower = 250.5;
+        }
+        part rightMotor : Motor {
+            maxPower = 250.5;
+        }
+    }
+}

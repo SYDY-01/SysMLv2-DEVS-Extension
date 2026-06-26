@@ -1,0 +1,16 @@
+package Model39_PlatoonTopology {
+    port def NetworkPort;
+    
+    part def LeaderVehicle { out port txData : NetworkPort; }
+    part def FollowerVehicle { in port rxData : NetworkPort; out port txData : NetworkPort; }
+
+    part def PlatoonFormation {
+        part leader : LeaderVehicle;
+        part followerA : FollowerVehicle;
+        part followerB : FollowerVehicle;
+
+        // Daisy-chain communication topology
+        connect leader.txData to followerA.rxData;
+        connect followerA.txData to followerB.rxData;
+    }
+}

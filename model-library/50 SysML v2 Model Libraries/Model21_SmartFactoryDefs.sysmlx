@@ -1,0 +1,22 @@
+package Model21_SmartFactoryDefs {
+    attribute def double;
+    
+    enum def MaterialType { 
+        Metal; 
+        Plastic; 
+        Composite; 
+    }
+    
+    port def MaterialPort;
+    
+    part def RawMaterial { 
+        attribute type : MaterialType = MaterialType::Metal; 
+        attribute weight : double = 10.5;
+    }
+    
+    part def ConveyorBelt { 
+        attribute speed : double = 1.5; 
+        in port inMat : MaterialPort; 
+        out port outMat : MaterialPort; 
+    }
+}

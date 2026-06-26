@@ -1,0 +1,30 @@
+package Model19_ComplexHierarchy {
+    port def FluidPort;
+    port def ElectricPort;
+    
+    part def Pump {
+        in port power : ElectricPort;
+        out port fluidOut : FluidPort;
+    }
+    part def Tank {
+        out port fluidOut : FluidPort;
+    }
+    part def Valve {
+        in port fluidIn : FluidPort;
+        out port fluidOut : FluidPort;
+    }
+    part def ControlUnit {
+        out port powerOut : ElectricPort;
+    }
+    
+    part def CoolingSystem {
+        part ctrl : ControlUnit;
+        part p : Pump;
+        part t : Tank;
+        part v : Valve;
+        
+        connect ctrl.powerOut to p.power;
+        connect t.fluidOut to v.fluidIn;
+        connect v.fluidOut to p.fluidOut;
+    }
+}

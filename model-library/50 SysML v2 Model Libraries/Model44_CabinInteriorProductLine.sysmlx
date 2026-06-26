@@ -1,0 +1,136 @@
+package Model44_CabinInteriorProductLine {
+
+    attribute def double;
+    attribute def string;
+
+    // ==========================================
+    // 1. Variability Modeling: Configuration Options (Variant Points)
+    // ==========================================
+    enum def CabinLayout { 
+        TwoClass; 
+        ThreeClass; 
+        HighDensity; 
+    }
+    
+    enum def IFESystemType { 
+        BasicSeatback; 
+        PremiumTouch; 
+        WirelessBYOD; // Bring Your Own Device
+    }
+    
+    enum def GalleyConfiguration { 
+        Standard; 
+        HighCapacity; 
+        Minimalist; 
+    }
+
+    // ==========================================
+    // 2. Interfaces (Standardized Core Connections)
+    // ==========================================
+    port def PowerBusPort;
+    port def DataNetworkPort;
+    port def StructuralMountPort;
+
+    // ==========================================
+    // 3. Core & Variant Subsystems (150% Product Line Core)
+    // ==========================================
+    
+    // 3.1 Seating Modules
+    part def SeatModule {
+        attribute seatWeight : double = 12.5; // kg per seat
+        in port pwrIn : PowerBusPort;
+        in port dataIn : DataNetworkPort;
+        inout port floorMount : StructuralMountPort;
+    }
+
+    // 3.2 In-Flight Entertainment (IFE) Server
+    part def IFEServer {
+        attribute serverPowerLoad : double = 1500.0;
+        out port mediaDataOut : DataNetworkPort;
+    }
+
+    // 3.3 Power Distribution Network
+    part def PowerDistributionPanel {
+        attribute maxCapacity : double = 45000.0; // Watts
+        out port cabinPwrOut : PowerBusPort;
+    }
+
+    // 3.4 Galley & Lavatory Modules
+    part def GalleyModule {
+        attribute waterCapacity : double = 200.0;
+        in port pwrIn : PowerBusPort;
+        inout port structuralMount : StructuralMountPort;
+    }
+
+    // ==========================================
+    // 4. Product Line Architecture (Configurable 100% Platform)
+    // ==========================================
+    part def AircraftCabinPlatform {
+        
+        // --- Variant Constraints (Mapped as Attributes) ---
+        attribute configuredLayout : CabinLayout = CabinLayout::TwoClass;
+        attribute configuredIFE : IFESystemType = IFESystemType::BasicSeatback;
+        attribute configuredGalley : GalleyConfiguration = GalleyConfiguration::Standard;
+        
+        // --- System Level Aggregate Constraints ---
+        attribute totalInteriorWeight : double = 4500.0;
+        attribute totalElectricalLoad : double = 25000.0;
+
+        // --- Core Subsystem Instantiations ---
+        part pdp : PowerDistributionPanel;
+        part ifeHeadEnd : IFEServer;
+        part econZoneSeats : SeatModule;
+        part premiumZoneSeats : SeatModule;
+        part fwdGalley : GalleyModule;
+
+        // --- Standardized Interface Topology ---
+        connect pdp.cabinPwrOut to econZoneSeats.pwrIn;
+        connect pdp.cabinPwrOut to premiumZoneSeats.pwrIn;
+        connect pdp.cabinPwrOut to fwdGalley.pwrIn;
+        connect ifeHeadEnd.mediaDataOut to econZoneSeats.dataIn;
+        connect ifeHeadEnd.mediaDataOut to premiumZoneSeats.dataIn;
+
+        // ==========================================
+        // 5. Lifecycle Configuration Management (BOM Tracing via Actions)
+        // Represents the workflow from Engineering -> Manufacturing -> Operations
+        // ==========================================
+        action baselineDesignBOM;      // EBOM Generation
+        action validateStructuralInterfaces;
+        action generateManufacturingBOM; // MBOM Generation
+        action createAssemblyRouting;
+        action publishMaintenanceBOM;    // SBOM/Operations BOM Generation
+
+        // Traceability and impact analysis flow
+        flow baselineDesignBOM to validateStructuralInterfaces;
+        flow validateStructuralInterfaces to generateManufacturingBOM;
+        flow generateManufacturingBOM to createAssemblyRouting;
+        flow createAssemblyRouting to publishMaintenanceBOM;
+    }
+
+    // ==========================================
+    // 6. Airline Specific Configurations (Variant Resolutions)
+    // ==========================================
+    part def AirlineFleetConfigurations {
+        
+        // Configuration A: Legacy Carrier (Three-Class, Premium IFE)
+        part airlineA_LongHaulConfig : AircraftCabinPlatform {
+            configuredLayout = CabinLayout::ThreeClass;
+            configuredIFE = IFESystemType::PremiumTouch;
+            configuredGalley = GalleyConfiguration::HighCapacity;
+            
+            totalInteriorWeight = 6200.5;
+            totalElectricalLoad = 38000.0;
+        }
+
+        // Configuration B: Low Cost Carrier (High Density, Wireless BYOD)
+        part airlineB_LCCConfig : AircraftCabinPlatform {
+            configuredLayout = CabinLayout::HighDensity;
+            configuredIFE = IFESystemType::WirelessBYOD;
+            configuredGalley = GalleyConfiguration::Minimalist;
+            
+            // Weight and power significantly reduced due to BYOD and lighter galleys
+            totalInteriorWeight = 3850.0;
+            totalElectricalLoad = 12000.0;
+        }
+    }
+}

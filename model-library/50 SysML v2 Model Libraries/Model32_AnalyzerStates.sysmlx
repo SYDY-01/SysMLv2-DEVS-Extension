@@ -1,0 +1,30 @@
+package Model32_AnalyzerStates {
+    part def AutomatedAnalyzer {
+        initial state PoweredOff;
+        state Calibrating;
+        state AnalyzingSample;
+        state AutoCleaning;
+
+        transition turnOn { 
+            first PoweredOff; 
+            then Calibrating; 
+        }
+        transition calibrationDone { 
+            first Calibrating; 
+            then AnalyzingSample; 
+        }
+        transition analysisComplete { 
+            first AnalyzingSample; 
+            then AutoCleaning; 
+        }
+        // Loop back to analyzing for the next sample batch
+        transition cleanDone { 
+            first AutoCleaning; 
+            then AnalyzingSample; 
+        }
+        transition shutdown { 
+            first AutoCleaning; 
+            then PoweredOff; 
+        }
+    }
+}

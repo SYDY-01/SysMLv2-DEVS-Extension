@@ -1,0 +1,20 @@
+package Model14_StateMachines {
+    part def TrafficLight {
+        initial state Red;
+        state Green;
+        state Yellow;
+        
+        transition t1 { 
+            first Red; 
+            then Green; 
+        }
+        transition t2 { 
+            first Green; 
+            then Yellow; 
+        }
+        transition t3 { 
+            first Yellow; 
+            then Red; 
+        }
+    }
+}

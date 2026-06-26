@@ -1,0 +1,291 @@
+package Model50_UndergroundUtilityTunnel {
+
+    attribute def double;
+    attribute def string;
+    attribute def integer;
+
+    // ==========================================
+    // 1. Enumerations: Types & Status Definitions
+    // ==========================================
+    enum def TunnelSectionType {
+        StandardSegment;
+        FeedingPort;
+        VentilationShaft;
+        EscapeExit;
+        Intersection;
+    }
+
+    enum def CabinLayout {
+        IntegratedCabin;
+        PowerCommsSharedCabin;
+        GasExclusiveCabin;
+        HeatIndependentCabin;
+    }
+
+    enum def PipelineType {
+        HighVoltagePower;
+        Telecommunication;
+        WaterSupply;
+        DistrictHeating;
+        PressureGas;
+    }
+
+    enum def OperationState {
+        Normal;
+        EarlyWarning;
+        Emergency;
+        Maintenance;
+    }
+
+    enum def LifeCyclePhase {
+        PlanningDesign;
+        Construction;
+        OperationMaintenance;
+        RetrofitExpansion;
+    }
+
+    // ==========================================
+    // 2. Multi-Discipline Interface Ports
+    // ==========================================
+    port def StructuralPort;        // Mechanical load & structural force interface
+    port def MediumPort;            // Fluid, power and cable medium transmission
+    port def ControlSignalPort;     // Monitoring, control and alarm data exchange
+    port def SpatialInterfacePort;  // Spatial geometry, installation and docking interface
+
+    // ==========================================
+    // 3. Subsystem Definitions (6 Professional Domains + Spatial Unit)
+    // ==========================================
+
+    // 3.1 Structural Body System (Civil Engineering Domain)
+    part def StructuralSystem {
+        attribute designBearingLoad_kN : double = 3500.0;
+        attribute clearHeight_m : double = 3.2;
+        attribute fireResistanceLimit_h : double = 3.0;
+
+        in port superstructureLoadIn : StructuralPort;
+        out port foundationReactionOut : StructuralPort;
+        port installationInterface : SpatialInterfacePort;
+    }
+
+    // 3.2 General Pipeline Unit (5 categories of utility pipelines)
+    part def PipelineUnit {
+        attribute category : PipelineType;
+        attribute nominalDiameter_mm : double = 800.0;
+        attribute designPressure_MPa : double = 1.6;
+        attribute ratedTransmissionCapacity : double = 0.0;
+
+        in port mountInterface : SpatialInterfacePort;
+        in port structuralLoadInput : StructuralPort;
+        port mediumTransmissionPort : MediumPort;
+        port monitoringTap : ControlSignalPort;
+    }
+
+    // 3.3 Ventilation System
+    part def VentilationSystem {
+        attribute ratedAirVolume_m3h : double = 18000.0;
+        attribute airChangeRate_perHour : double = 8.0;
+
+        in port controlCommand : ControlSignalPort;
+        port airExchangePort : MediumPort;
+    }
+
+    // 3.4 Drainage & Sump System
+    part def DrainageSystem {
+        attribute pumpCapacity_m3h : double = 120.0;
+        attribute sumpEffectiveVolume_m3 : double = 6.0;
+
+        in port waterLevelSignal : ControlSignalPort;
+        port dischargePort : MediumPort;
+    }
+
+    // 3.5 Fire Protection System
+    part def FireProtectionSystem {
+        attribute sprinklerDensity_Lminm2 : double = 12.5;
+        attribute fireDamperCount : integer = 6;
+
+        in port fireAlarmSignal : ControlSignalPort;
+        port extinguishingMediumPort : MediumPort;
+    }
+
+    // 3.6 Environment & Security Monitoring System
+    part def MonitoringSystem {
+        attribute sensorNodeCount : integer = 32;
+        attribute areaCoverageRate : double = 0.98;
+
+        out port sensorDataOutput : ControlSignalPort;
+        in port deviceControlInput : ControlSignalPort;
+    }
+
+    // 3.7 Spatial Section Unit (Spatial Dimension Nodes)
+    part def TunnelSectionUnit {
+        attribute sectionType : TunnelSectionType;
+        attribute singleSectionLength_m : double = 25.0;
+        part sectionStructure : StructuralSystem;
+        port sectionDockingInterface : SpatialInterfacePort;
+    }
+
+    // ==========================================
+    // 4. Utility Tunnel Integrated System Architecture
+    // ==========================================
+    part def UtilityTunnelSystem {
+
+        // System-level Core Attributes
+        attribute totalLength_km : double = 4.5;
+        attribute cabinLayoutScheme : CabinLayout = CabinLayout::IntegratedCabin;
+        attribute currentOperationState : OperationState = OperationState::Normal;
+        attribute currentLifecycleStage : LifeCyclePhase = LifeCyclePhase::OperationMaintenance;
+
+        // Spatial Node Instantiation (Full spatial dimension coverage)
+        part standardSegment : TunnelSectionUnit { sectionType = TunnelSectionType::StandardSegment; }
+        part ventilationShaft : TunnelSectionUnit { sectionType = TunnelSectionType::VentilationShaft; singleSectionLength_m = 5.0; }
+        part escapeExit : TunnelSectionUnit { sectionType = TunnelSectionType::EscapeExit; singleSectionLength_m = 3.0; }
+        part intersectionNode : TunnelSectionUnit { sectionType = TunnelSectionType::Intersection; singleSectionLength_m = 8.0; }
+
+        // Discipline Subsystem Instantiation
+        part powerPipeline : PipelineUnit { category = PipelineType::HighVoltagePower; nominalDiameter_mm = 630.0; }
+        part commsPipeline : PipelineUnit { category = PipelineType::Telecommunication; nominalDiameter_mm = 110.0; }
+        part waterPipeline : PipelineUnit { category = PipelineType::WaterSupply; nominalDiameter_mm = 1000.0; }
+        part heatPipeline : PipelineUnit { category = PipelineType::DistrictHeating; nominalDiameter_mm = 700.0; }
+        part gasPipeline : PipelineUnit { category = PipelineType::PressureGas; nominalDiameter_mm = 400.0; }
+
+        part ventilation : VentilationSystem;
+        part drainage : DrainageSystem;
+        part fireProtection : FireProtectionSystem;
+        part monitoring : MonitoringSystem;
+
+        // --- Cross-Discipline & Cross-Node Port Connectivity ---
+        // Spatial docking between adjacent sections
+        connect standardSegment.sectionDockingInterface to ventilationShaft.sectionDockingInterface;
+        connect standardSegment.sectionDockingInterface to escapeExit.sectionDockingInterface;
+        connect standardSegment.sectionDockingInterface to intersectionNode.sectionDockingInterface;
+
+        // Pipeline installation mapping to structural system
+        connect powerPipeline.mountInterface to standardSegment.sectionStructure.installationInterface;
+        connect commsPipeline.mountInterface to standardSegment.sectionStructure.installationInterface;
+        connect waterPipeline.mountInterface to standardSegment.sectionStructure.installationInterface;
+        connect heatPipeline.mountInterface to standardSegment.sectionStructure.installationInterface;
+        connect gasPipeline.mountInterface to standardSegment.sectionStructure.installationInterface;
+
+        // Structural load convergence: pipeline loads transferred to main structure
+        connect powerPipeline.structuralLoadInput to standardSegment.sectionStructure.superstructureLoadIn;
+        connect heatPipeline.structuralLoadInput to standardSegment.sectionStructure.superstructureLoadIn;
+        connect waterPipeline.structuralLoadInput to standardSegment.sectionStructure.superstructureLoadIn;
+
+        // Monitoring signal interconnection network
+        connect powerPipeline.monitoringTap to monitoring.deviceControlInput;
+        connect gasPipeline.monitoringTap to monitoring.deviceControlInput;
+        connect heatPipeline.monitoringTap to monitoring.deviceControlInput;
+
+        connect monitoring.sensorDataOutput to ventilation.controlCommand;
+        connect monitoring.sensorDataOutput to fireProtection.fireAlarmSignal;
+        connect monitoring.sensorDataOutput to drainage.waterLevelSignal;
+
+        // ==========================================
+        // 5. Operation State Machine (Full Status Transition)
+        // ==========================================
+        initial state NormalOperation;
+        state ParameterEarlyWarning;
+        state EmergencyResponse;
+        state MaintenanceShutdown;
+
+        // Normal state transition path
+        transition warningTriggered { first NormalOperation; then ParameterEarlyWarning; }
+        transition escalationToEmergency { first ParameterEarlyWarning; then EmergencyResponse; }
+        transition faultCleared { first EmergencyResponse; then NormalOperation; }
+        transition switchToMaintenance { first ParameterEarlyWarning; then MaintenanceShutdown; }
+        transition maintenanceCompleted { first MaintenanceShutdown; then NormalOperation; }
+
+        // Sudden emergency direct trigger (e.g. fire, gas leakage)
+        transition directEmergencyTrigger { first NormalOperation; then EmergencyResponse; }
+
+        // ==========================================
+        // 6. Multi-Discipline Collaborative Workflows
+        // ==========================================
+
+        // Workflow A: Daily Multi-Profession Routine Inspection
+        action civilStructureInspection;
+        action pipelineAppearanceAndPressureCheck;
+        action electromechanicalDeviceFunctionTest;
+        action monitoringDataConsistencyVerification;
+        action inspectionRecordAndArchive;
+
+        flow civilStructureInspection to pipelineAppearanceAndPressureCheck;
+        flow pipelineAppearanceAndPressureCheck to electromechanicalDeviceFunctionTest;
+        flow electromechanicalDeviceFunctionTest to monitoringDataConsistencyVerification;
+        flow monitoringDataConsistencyVerification to inspectionRecordAndArchive;
+
+        // Workflow B: Fire Emergency Disposal Process
+        action fireSignalDetectionAndConfirmation;
+        action fireDamperCloseAndVentilationShutdown;
+        action extinguishingSystemActivation;
+        action personnelEvacuationGuidance;
+        action onSiteDamageAssessmentAndRecovery;
+
+        flow fireSignalDetectionAndConfirmation to fireDamperCloseAndVentilationShutdown;
+        flow fireDamperCloseAndVentilationShutdown to extinguishingSystemActivation;
+        flow extinguishingSystemActivation to personnelEvacuationGuidance;
+        flow personnelEvacuationGuidance to onSiteDamageAssessmentAndRecovery;
+
+        // ==========================================
+        // 7. Multi-Parameter Coupling Constraint Chains
+        // ==========================================
+
+        // Constraint Chain 1: Structural Load Safety Verification
+        action sumTotalPipelineAndEquipmentLoad;
+        action checkStructuralBearingCapacity;
+        action evaluateFoundationSettlementRisk;
+        action outputLoadComplianceResult;
+
+        flow sumTotalPipelineAndEquipmentLoad to checkStructuralBearingCapacity;
+        flow checkStructuralBearingCapacity to evaluateFoundationSettlementRisk;
+        flow evaluateFoundationSettlementRisk to outputLoadComplianceResult;
+
+        // Constraint Chain 2: Ventilation Capacity Matching Check
+        action calculateCabinTotalHeatDissipation;
+        action computeRequiredVentilationAirVolume;
+        action compareWithRatedVentilationCapacity;
+        action outputVentilationComplianceConclusion;
+
+        flow calculateCabinTotalHeatDissipation to computeRequiredVentilationAirVolume;
+        flow computeRequiredVentilationAirVolume to compareWithRatedVentilationCapacity;
+        flow compareWithRatedVentilationCapacity to outputVentilationComplianceConclusion;
+
+        // Constraint Chain 3: Monitoring Coverage Integrity Check
+        action countAllMonitoringSensorNodes;
+        action calculateEffectiveCoverageArea;
+        action verifyFullCoverageSpecification;
+        action outputCoverageVerificationResult;
+
+        flow countAllMonitoringSensorNodes to calculateEffectiveCoverageArea;
+        flow calculateEffectiveCoverageArea to verifyFullCoverageSpecification;
+        flow verifyFullCoverageSpecification to outputCoverageVerificationResult;
+    }
+
+    // ==========================================
+    // 8. Lifecycle Configuration Verification Scenarios (Variant Management)
+    // ==========================================
+    part def TunnelConfigurationVerification {
+
+        // Scenario 1: Gas Exclusive Cabin Layout (High safety standard for pressure gas)
+        part gasExclusiveCabinConfig : UtilityTunnelSystem {
+            cabinLayoutScheme = CabinLayout::GasExclusiveCabin;
+            totalLength_km = 4.5;
+            currentOperationState = OperationState::Normal;
+            // Gas pipeline placed in independent cabin with dedicated ventilation and fire protection
+        }
+
+        // Scenario 2: Power & Communication Shared Cabin (Economical integrated layout)
+        part powerCommsSharedConfig : UtilityTunnelSystem {
+            cabinLayoutScheme = CabinLayout::PowerCommsSharedCabin;
+            totalLength_km = 3.8;
+            // Power and communication pipelines share cabin, unified monitoring and lighting system
+        }
+
+        // Scenario 3: Retrofit Expansion Stage Configuration (Lifecycle change impact analysis)
+        part retrofitExpansionConfig : UtilityTunnelSystem {
+            currentLifecycleStage = LifeCyclePhase::RetrofitExpansion;
+            currentOperationState = OperationState::Maintenance;
+            // Add new water supply pipeline, automatically verify structural load and spatial compatibility
+        }
+    }
+}

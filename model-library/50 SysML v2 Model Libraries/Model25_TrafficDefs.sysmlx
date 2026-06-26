@@ -1,0 +1,16 @@
+package Model25_TrafficDefs {
+    attribute def double;
+    
+    enum def LightColor { 
+        Red; 
+        Yellow; 
+        Green; 
+    }
+    
+    port def SignalPort;
+    
+    part def TrafficCamera { 
+        attribute resolution : double = 1080.0; 
+        out port signal : SignalPort; 
+    }
+}

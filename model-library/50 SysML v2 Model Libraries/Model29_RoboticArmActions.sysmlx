@@ -1,0 +1,12 @@
+package Model29_RoboticArmActions {
+    part def RoboticController {
+        action calculateKinematics;
+        action actuateMotors;
+        action readSensors;
+        action adjustGrip;
+
+        flow readSensors to calculateKinematics;
+        flow calculateKinematics to actuateMotors;
+        flow actuateMotors to adjustGrip;
+    }
+}

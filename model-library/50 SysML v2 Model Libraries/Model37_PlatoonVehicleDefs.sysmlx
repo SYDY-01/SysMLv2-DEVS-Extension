@@ -1,0 +1,21 @@
+package Model37_PlatoonVehicleDefs {
+    attribute def double;
+    
+    enum def DriveMode { 
+        Manual; 
+        Autonomous; 
+        Platooning; 
+    }
+    
+    port def RadarPort;
+    port def V2XCommPort;
+
+    part def AutonomousVehicle {
+        attribute currentSpeed : double = 0.0;
+        attribute activeMode : DriveMode = DriveMode::Manual;
+        
+        in port radarEchoIn : RadarPort;
+        out port radarWaveOut : RadarPort;
+        inout port v2xAntenna : V2XCommPort; // Bidirectional communication
+    }
+}

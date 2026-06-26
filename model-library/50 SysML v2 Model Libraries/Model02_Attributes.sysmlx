@@ -1,0 +1,9 @@
+package Model02_Attributes {
+    attribute def double;
+    attribute def string;
+    
+    part def Sensor {
+        attribute temperature : double;
+        attribute serialNumber : string;
+    }
+}

@@ -1,0 +1,14 @@
+package Model18_CombinedBehavior {
+    part def SmartDevice {
+        action initHardware;
+        action runDiagnostics;
+        flow initHardware to runDiagnostics;
+        
+        initial state Starting;
+        state Operational;
+        transition startUp { 
+            first Starting; 
+            then Operational; 
+        }
+    }
+}

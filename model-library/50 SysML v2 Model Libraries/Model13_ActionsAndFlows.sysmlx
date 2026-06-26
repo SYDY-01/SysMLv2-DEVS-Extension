@@ -1,0 +1,10 @@
+package Model13_ActionsAndFlows {
+    part def Processor {
+        action readData;
+        action computeData;
+        action writeData;
+        
+        flow readData to computeData;
+        flow computeData to writeData;
+    }
+}

@@ -1,0 +1,25 @@
+package Model24_FactoryIntegration {
+    port def ItemPort;
+    
+    domain part def CyberSpace {}
+    domain part def PhysicalFloor {}
+
+    part def ProcessingUnit { 
+        in port pIn : ItemPort; 
+        out port pOut : ItemPort; 
+    }
+    part def SortingUnit { 
+        in port sIn : ItemPort; 
+        out port sOut : ItemPort; 
+    }
+
+    part def FactoryFloor {
+        part digitalTwin : CyberSpace;
+        part physicalPlant : PhysicalFloor;
+        
+        part pu1 : ProcessingUnit;
+        part su1 : SortingUnit;
+
+        connect pu1.pOut to su1.sIn;
+    }
+}

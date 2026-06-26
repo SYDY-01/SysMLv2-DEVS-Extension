@@ -1,0 +1,25 @@
+package Model35_BuildingHierarchy {
+    attribute def double;
+    
+    part def Room {
+        attribute currentTemp : double = 25.0;
+    }
+    
+    part def Floor {
+        // Redefining temperatures for different room contexts
+        part meetingRoom : Room { 
+            currentTemp = 21.0; 
+        }
+        part openOfficeSpace : Room { 
+            currentTemp = 24.5; 
+        }
+        part serverRoom : Room {
+            currentTemp = 18.0;
+        }
+    }
+    
+    part def SmartBuilding {
+        part groundFloor : Floor;
+        part executiveFloor : Floor;
+    }
+}
